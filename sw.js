@@ -3,12 +3,14 @@
  * Caches files individually with progress tracking
  */
 
-const CACHE_NAME = 'bouncengine-v0.9.9996';
+importScripts('/version.js');                         // single source of truth
+const CACHE_NAME = 'bouncengine-' + self.APP_VERSION;
 
 // All files to precache during install
 const PRECACHE_URLS = [
   '/',
   '/index.html',
+  '/version.js',
   '/storage.js',
   '/progress.js',
   '/site.webmanifest',
@@ -146,7 +148,7 @@ self.addEventListener('fetch', (event) => {
 
   // Network-first for frequently updated files — changes appear immediately
   // { cache: 'no-cache' } bypasses the browser HTTP cache.
-  if (event.request.url.includes('/engine/levels.js') || event.request.url.includes('/editor/') || event.request.url.includes('/api/')) {
+  if (event.request.url.includes('/version.js') || event.request.url.includes('/engine/levels.js') || event.request.url.includes('/editor/') || event.request.url.includes('/api/')) {
     event.respondWith(
       fetch(event.request, { cache: 'no-cache' })
         .then((response) => {

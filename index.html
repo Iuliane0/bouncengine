@@ -28,9 +28,12 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
     <link rel="shortcut icon" href="/favicon.ico">
 
+    <!-- Single source of truth for the release version (edit /version.js only) -->
+    <script src="/version.js"></script>
+
     <script>
-        // App version - changing this triggers the loading/disclaimer sequence again
-        const APP_VERSION = 'v0.9.9996';
+        // App version comes from /version.js — the ONLY place to bump a release.
+        const APP_VERSION = self.APP_VERSION || 'v0.9.9996';
 
         // Check for version update
         if (localStorage.getItem('appVersion') !== APP_VERSION) {
@@ -4889,9 +4892,9 @@
             async function checkServerVersion() {
                 console.log('[PWA] Checking version... Client:', APP_VERSION);
                 try {
-                    const res = await fetch('/sw.js?_=' + Date.now(), { cache: 'no-store' });
+                    const res = await fetch('/version.js?_=' + Date.now(), { cache: 'no-store' });
                     const text = await res.text();
-                    const match = text.match(/CACHE_NAME = 'bouncengine-([^']+)'/);
+                    const match = text.match(/APP_VERSION\s*=\s*'([^']+)'/);
                     console.log('[PWA] Server version:', match ? match[1] : 'not found');
                     if (match && match[1] !== APP_VERSION) {
                         console.log('[PWA] Version mismatch! Server:', match[1], 'Client:', APP_VERSION);
