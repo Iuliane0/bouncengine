@@ -28,20 +28,16 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
     <link rel="shortcut icon" href="/favicon.ico">
 
-    <!-- Single source of truth for the release version (edit /version.js only) -->
-    <script src="/version.js"></script>
-
     <script>
-        // App version comes from /version.js — the ONLY place to bump a release.
-        const APP_VERSION = self.APP_VERSION || 'v0.9.9996';
-
-        // Check for version update
-        if (localStorage.getItem('appVersion') !== APP_VERSION) {
-            // Version changed - triggers loading/caching sequence on next page load
-            // Note: disclaimerAccepted is intentionally preserved across updates
-            console.log('New version detected:', APP_VERSION, '(was:', localStorage.getItem('appVersion'), ')');
-            localStorage.setItem('appVersion', APP_VERSION);
-        }
+        // The version of the build we are RUNNING = the one we last successfully applied.
+        //
+        // Deliberately NOT loaded from a <script src="/version.js"> tag: a CDN/proxy can
+        // serve that file from its edge cache while the update check reads a cache-busted
+        // copy from the origin. The two would disagree permanently and the page would
+        // wipe caches and reload forever. /version.js stays the single source of truth,
+        // but it is only ever read over the network (see checkServerVersion), and the
+        // update path is guarded so it can never reload more than once per version.
+        let APP_VERSION = localStorage.getItem('appVersion') || null;
 
         // Blocking script: prevent any flash before JS runs
         if (localStorage.getItem('disclaimerAccepted')) {
@@ -3473,7 +3469,7 @@
             const mobileBackBtn = document.getElementById('mobileBackBtn');
 
             // Set version text content
-            versionText.textContent = APP_VERSION;
+            versionText.textContent = APP_VERSION || '';   // filled in once the check resolves
 
             function hideAllMenus() {
                 mainMenu.classList.remove('active');
@@ -5019,31 +5015,63 @@
             }
 
             // Check server version - returns true if versions match, false if reloading
+            // Adopt a version as "the build we are running" without reloading.
+            function adoptVersion(v) {
+                APP_VERSION = v;
+                localStorage.setItem('appVersion', v);
+                localStorage.removeItem('updateAttempt');
+                const el = document.getElementById('versionText');
+                if (el) el.textContent = v;
+            }
+
             async function checkServerVersion() {
                 console.log('[PWA] Checking version... Client:', APP_VERSION);
                 try {
                     const res = await fetch('/version.js?_=' + Date.now(), { cache: 'no-store' });
                     const text = await res.text();
                     const match = text.match(/APP_VERSION\s*=\s*'([^']+)'/);
-                    console.log('[PWA] Server version:', match ? match[1] : 'not found');
-                    if (match && match[1] !== APP_VERSION) {
-                        console.log('[PWA] Version mismatch! Server:', match[1], 'Client:', APP_VERSION);
-                        const regs = await navigator.serviceWorker.getRegistrations();
-                        await Promise.all(regs.map(r => r.unregister()));
-                        const names = await caches.keys();
-                        await Promise.all(names.map(n => caches.delete(n)));
-                        // Mark as update so loading text shows "Updating" instead of "Downloading"
-                        localStorage.setItem('isUpdating', 'true');
-                        // Clear hash before reload to ensure full update process runs
-                        // (otherwise hash navigation would skip the loading/caching flow)
-                        if (window.location.hash) {
-                            history.replaceState(null, '', window.location.pathname + window.location.search);
-                        }
-                        window.location.reload();
-                        return false; // Reloading
+                    if (!match) {
+                        console.warn('[PWA] Could not read server version — skipping update check');
+                        return true;
                     }
-                    console.log('[PWA] Version OK:', APP_VERSION);
-                    return true; // Versions match
+                    const serverVer = match[1];
+                    console.log('[PWA] Server version:', serverVer);
+
+                    // First run (or cleared storage): adopt what the server has, never reload.
+                    if (!APP_VERSION) { adoptVersion(serverVer); return true; }
+
+                    if (serverVer === APP_VERSION) {
+                        localStorage.removeItem('updateAttempt');
+                        console.log('[PWA] Version OK:', APP_VERSION);
+                        return true;
+                    }
+
+                    // Versions differ. If we ALREADY reloaded once targeting this exact
+                    // version and still came back mismatched, something upstream is serving
+                    // us a stale copy (CDN edge cache, proxy). Adopt it and carry on rather
+                    // than reloading forever — one reload per version, maximum.
+                    if (localStorage.getItem('updateAttempt') === serverVer) {
+                        console.warn('[PWA] Already updated to', serverVer, '— not reloading again');
+                        adoptVersion(serverVer);
+                        return true;
+                    }
+
+                    console.log('[PWA] Version mismatch! Server:', serverVer, 'Client:', APP_VERSION);
+                    localStorage.setItem('updateAttempt', serverVer);
+                    localStorage.setItem('appVersion', serverVer);
+                    const regs = await navigator.serviceWorker.getRegistrations();
+                    await Promise.all(regs.map(r => r.unregister()));
+                    const names = await caches.keys();
+                    await Promise.all(names.map(n => caches.delete(n)));
+                    // Mark as update so loading text shows "Updating" instead of "Downloading"
+                    localStorage.setItem('isUpdating', 'true');
+                    // Clear hash before reload to ensure full update process runs
+                    // (otherwise hash navigation would skip the loading/caching flow)
+                    if (window.location.hash) {
+                        history.replaceState(null, '', window.location.pathname + window.location.search);
+                    }
+                    window.location.reload();
+                    return false; // Reloading
                 } catch (e) {
                     console.warn('[PWA] Version check failed:', e);
                     return true; // Continue on error
@@ -5356,23 +5384,13 @@
                     phase = 'exiting'; clearTimers();                // phase === 'playing'
                     blurIn(() => { doSwap(); });
                 }
+                // The menu is long-lived now (it never unloads on level launch), so re-run
+                // the SAME guarded check used at boot — never a bespoke copy, or this path
+                // could reload-loop on a stale CDN copy.
                 async function pollVersion() {
                     if (window.__sectorActive) return;
-                    try {
-                        const res = await fetch('/version.js?_=' + Date.now(), { cache: 'no-store' });
-                        const text = await res.text();
-                        const m = text.match(/APP_VERSION\s*=\s*'([^']+)'/);
-                        if (m && m[1] !== APP_VERSION) {
-                            if (navigator.serviceWorker) {
-                                const regs = await navigator.serviceWorker.getRegistrations();
-                                await Promise.all(regs.map(r => r.unregister()));
-                            }
-                            const names = await caches.keys();
-                            await Promise.all(names.map(n => caches.delete(n)));
-                            localStorage.setItem('isUpdating', 'true');
-                            location.reload();
-                        }
-                    } catch (e) { }
+                    if (!('serviceWorker' in navigator) || window.isNativeApp) return;
+                    try { await checkServerVersion(); } catch (e) { }
                 }
                 // Engine → parent bridge (strict same-origin + must be OUR frame)
                 window.addEventListener('message', function (e) {
