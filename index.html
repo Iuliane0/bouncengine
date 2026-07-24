@@ -1763,6 +1763,97 @@
 </head>
 
 <body>
+    <!-- ===== GAME SECTOR (engine iframe host) + FRUTIGER-AERO LIQUID TRANSITION =====
+         Injected OUTSIDE .game-container on purpose: that element is will-change:transform
+         + overflow:hidden, which makes it a containing block for position:fixed descendants,
+         so a fixed iframe nested inside it would be clipped/scaled into the 320x180 box.
+         As direct <body> children these are viewport-relative and paint above the menu. -->
+    <style>
+      #gameSector{ position:fixed; inset:0; z-index:900; display:none; background:#000; overflow:hidden; }
+      #gameSector iframe{ position:absolute; inset:0; width:100%; height:100%; border:0; margin:0; padding:0; display:block; background:#000; }
+
+      #liquidTransition{
+        position:fixed; inset:0; z-index:950; display:none; pointer-events:none; overflow:hidden;
+        --aqua:#16d2ff; --teal:#0ea5a5; --deep:#0a3a5c; --foam:#eafcff;
+        --lt-cover-dur:560ms; --lt-reveal-dur:600ms; --lt-ease:cubic-bezier(.66,0,.24,1);
+      }
+      #liquidTransition.lt-on{ display:block; pointer-events:auto; }
+
+      #liquidTransition .lt-sheet{
+        position:absolute; top:-6vh; left:-15vw; width:130vw; height:112vh;
+        transform:translate3d(-140vw,0,0);
+        background:
+          radial-gradient(120% 80% at 30% 18%, rgba(234,252,255,.60), rgba(234,252,255,0) 46%),
+          linear-gradient(102deg, var(--deep) 0%, var(--teal) 34%, var(--aqua) 70%, var(--foam) 100%);
+        -webkit-mask:linear-gradient(90deg, transparent 0%, #000 9%, #000 91%, transparent 100%);
+                mask:linear-gradient(90deg, transparent 0%, #000 9%, #000 91%, transparent 100%);
+        filter:url(#lt-liquid);
+      }
+      /* If the SVG filter can't be referenced (some WebKit), keep a solid opaque sheet so the boot never shows */
+      @supports not (filter: url(#lt-liquid)){ #liquidTransition .lt-sheet{ filter:none; -webkit-mask:none; mask:none; } }
+      /* cover sweep (off-left -> covering) */
+      #liquidTransition.lt-anim .lt-sheet{ transition:transform var(--lt-cover-dur) var(--lt-ease); will-change:transform; }
+      #liquidTransition.lt-cover .lt-sheet{ transform:translate3d(0,0,0); }
+      /* reveal sweep (covering -> off-right) */
+      #liquidTransition.lt-revealing .lt-sheet{ transition:transform var(--lt-reveal-dur) var(--lt-ease); will-change:transform; }
+      #liquidTransition.lt-reveal .lt-sheet{ transform:translate3d(140vw,0,0); }
+
+      /* bloom flare at t0 */
+      #liquidTransition .lt-flare{
+        position:absolute; left:50%; top:50%; width:10px; height:10px; margin:-5px 0 0 -5px; border-radius:50%;
+        background:radial-gradient(circle, #fff 0%, rgba(214,247,255,.9) 30%, rgba(22,210,255,0) 70%);
+        opacity:0; transform:scale(.2); pointer-events:none; mix-blend-mode:screen;
+      }
+      #liquidTransition.lt-flash .lt-flare{ animation:lt-bloom .6s ease-out; }
+      @keyframes lt-bloom{ 0%{opacity:0;transform:scale(.2)} 22%{opacity:1} 100%{opacity:0;transform:scale(36)} }
+
+      /* rising bubbles during the aqua hold */
+      #liquidTransition .lt-bubbles{ position:absolute; inset:0; pointer-events:none; opacity:0; transition:opacity .2s linear; }
+      #liquidTransition.lt-holding .lt-bubbles{ opacity:1; }
+      #liquidTransition .lt-bubbles span{
+        position:absolute; bottom:-8%; width:1.2vmax; height:1.2vmax; border-radius:50%; opacity:0;
+        background:radial-gradient(circle at 35% 30%, rgba(255,255,255,.95), rgba(234,252,255,.15) 60%, rgba(234,252,255,0) 72%);
+      }
+      #liquidTransition.lt-holding .lt-bubbles span{ animation:lt-rise 2.4s ease-in infinite; }
+      #liquidTransition .lt-bubbles span:nth-child(1){ left:20%; animation-delay:0s; }
+      #liquidTransition .lt-bubbles span:nth-child(2){ left:35%; width:1.6vmax; height:1.6vmax; animation-delay:.5s; }
+      #liquidTransition .lt-bubbles span:nth-child(3){ left:50%; animation-delay:.9s; }
+      #liquidTransition .lt-bubbles span:nth-child(4){ left:64%; width:1.7vmax; height:1.7vmax; animation-delay:.3s; }
+      #liquidTransition .lt-bubbles span:nth-child(5){ left:79%; animation-delay:1.2s; }
+      @keyframes lt-rise{ 0%{opacity:0;transform:translateY(0) scale(.6)} 18%{opacity:.85} 100%{opacity:0;transform:translateY(-118vh) scale(1.05)} }
+
+      /* reduced motion: flat aqua cross-fade, no wobble/bubbles/flare/transform */
+      @media (prefers-reduced-motion: reduce){
+        #liquidTransition .lt-sheet{
+          left:0; top:0; width:100%; height:100%; transform:none !important; filter:none;
+          -webkit-mask:none; mask:none; opacity:0; transition:opacity .25s linear;
+        }
+        #liquidTransition.lt-cover  .lt-sheet{ opacity:1; }
+        #liquidTransition.lt-reveal .lt-sheet{ opacity:0; }
+        #liquidTransition .lt-flare, #liquidTransition .lt-bubbles{ display:none; }
+      }
+    </style>
+
+    <div id="gameSector" aria-hidden="true"></div>
+
+    <div id="liquidTransition" aria-hidden="true">
+      <div class="lt-sheet"></div>
+      <div class="lt-flare"></div>
+      <div class="lt-bubbles"><span></span><span></span><span></span><span></span><span></span></div>
+    </div>
+
+    <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
+      <defs>
+        <filter id="lt-liquid" x="-30%" y="-30%" width="160%" height="160%" color-interpolation-filters="sRGB">
+          <feTurbulence type="fractalNoise" baseFrequency="0.012 0.02" numOctaves="2" seed="7" stitchTiles="stitch" result="noise"/>
+          <feDisplacementMap in="SourceGraphic" in2="noise" xChannelSelector="R" yChannelSelector="G" scale="0">
+            <animate attributeName="scale" values="8;22;14;20;8" dur="1.3s" repeatCount="indefinite"
+                     calcMode="spline" keySplines="0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1"/>
+          </feDisplacementMap>
+        </filter>
+      </defs>
+    </svg>
+
     <div class="game-container">
         <!-- Background layers (back to front by DOM order) -->
         <div class="bg-layers">
@@ -2310,6 +2401,7 @@
                 // Handle page visibility changes (tab switching, minimizing)
                 document.addEventListener('visibilitychange', () => {
                     if (document.visibilityState === 'visible') {
+                        if (window.__sectorActive) return; // game sector owns audio; keep menu ctx suspended
                         // Start resume immediately for fastest response
                         if (audioContext && audioContext.state === 'suspended' && !musicMuted) {
                             audioContext.resume().catch(e => console.warn('Quick resume failed:', e));
@@ -2322,6 +2414,7 @@
                 // Handle bfcache restoration (back/forward navigation)
                 window.addEventListener('pageshow', (event) => {
                     if (event.persisted) {
+                        if (window.__sectorActive) return; // game sector owns audio
                         // Page was restored from bfcache
                         console.log('Page restored from bfcache, recovering audio...');
                         // Immediate resume attempt
@@ -2334,6 +2427,7 @@
 
                 // Handle window focus (user clicks back into the window)
                 window.addEventListener('focus', () => {
+                    if (window.__sectorActive) return; // game sector owns audio
                     // Quick resume on focus
                     if (audioContext && audioContext.state === 'suspended' && !musicMuted) {
                         audioContext.resume().catch(e => console.warn('Focus resume failed:', e));
@@ -2343,6 +2437,7 @@
 
                 // iOS PWA: Resume audio on any touch (iOS requires touch events specifically)
                 document.addEventListener('touchstart', () => {
+                    if (window.__sectorActive) return; // game sector owns audio
                     if (audioContext && audioContext.state === 'suspended' && !musicMuted) {
                         audioContext.resume().then(() => {
                             if (loopBuffer && !scheduledLoopSource) {
@@ -2357,7 +2452,7 @@
                 const startAudioCheck = () => {
                     if (audioCheckInterval) return;
                     audioCheckInterval = setInterval(() => {
-                        if (document.visibilityState === 'visible' && audioContext && !musicMuted) {
+                        if (!window.__sectorActive && document.visibilityState === 'visible' && audioContext && !musicMuted) {
                             if (audioContext.state === 'suspended') {
                                 audioContext.resume().catch(() => { });
                             }
@@ -2391,6 +2486,8 @@
             async function recoverAudioContext() {
                 // Skip if music is muted
                 if (musicMuted) return;
+                // Skip while the game sector owns audio (menu track is intentionally down)
+                if (window.__sectorActive) return;
 
                 // Skip if no audio context exists yet
                 if (!audioContext) return;
@@ -2499,6 +2596,95 @@
 
                 // Schedule the loop to start immediately
                 scheduleLoop(audioContext.currentTime);
+            }
+
+            // ========== GAME SECTOR: MENU-MUSIC SUSPEND / RESUME ==========
+            // The page no longer unloads when a level launches (iframe sector), so we
+            // explicitly silence + suspend the menu track on enter and restore it on exit.
+            let _suspendTimer = null;
+            function suspendMenuMusic() {
+                if (musicMuted) { cancelScheduledLoop(); stopAudioKeepWarm(); return; }
+                const mg = (typeof ensureMasterGain === 'function') ? ensureMasterGain() : null;
+                if (mg && audioContext && audioContext.state === 'running') {
+                    const now = audioContext.currentTime;
+                    mg.gain.cancelScheduledValues(now);
+                    mg.gain.setValueAtTime(mg.gain.value, now);
+                    mg.gain.linearRampToValueAtTime(0, now + TOGGLE_FADE_TIME);
+                    if (_suspendTimer) clearTimeout(_suspendTimer);
+                    _suspendTimer = setTimeout(() => {
+                        _suspendTimer = null;
+                        cancelScheduledLoop();
+                        if (introSource) {
+                            try { introSource.stop(); introSource.disconnect(); } catch (e) { }
+                            introSource = null;
+                            if (introGainNode) { try { introGainNode.disconnect(); } catch (e) { } }
+                            introGainNode = null;
+                        }
+                        stopAudioKeepWarm();
+                        if (audioContext && audioContext.state === 'running') audioContext.suspend();
+                    }, TOGGLE_FADE_TIME * 1000 + 10);
+                } else {
+                    cancelScheduledLoop();
+                    stopAudioKeepWarm();
+                    if (audioContext && audioContext.state === 'running') audioContext.suspend();
+                }
+            }
+
+            // Mirror of the unmute path: resume the context, restart the loop at gain 0
+            // with the correct (muffled) frequency for the current submenu, then fade up.
+            // CRITICAL: suspendMenuMusic left masterGain at 0, so we MUST re-ramp it to 1
+            // or the music comes back SILENT. And iOS resume() can resolve while still
+            // suspended, so verify state==='running' and arm a gesture fallback otherwise.
+            function resumeMenuMusic() {
+                if (musicMuted) return;
+                if (!audioContext) return;
+                if (_suspendTimer) { clearTimeout(_suspendTimer); _suspendTimer = null; }
+                const startAudio = () => {
+                    const mg = ensureMasterGain();
+                    if (mg) {
+                        const now = audioContext.currentTime;
+                        mg.gain.cancelScheduledValues(now);
+                        mg.gain.setValueAtTime(0, now);
+                    }
+                    const inSubmenu = !mainMenu.classList.contains('active');
+                    const targetFreq = inSubmenu ? 600 : 22000;
+                    if (!muffleFilter) {
+                        muffleFilter = audioContext.createBiquadFilter();
+                        muffleFilter.type = 'lowpass';
+                        muffleFilter.frequency.value = targetFreq;
+                        lastMuffleFreq = targetFreq;
+                        muffleFilter.connect(ensureMasterGain());
+                    } else {
+                        muffleFilter.frequency.value = targetFreq;
+                        lastMuffleFreq = targetFreq;
+                    }
+                    cancelScheduledLoop();
+                    if (loopBuffer && typeof scheduleLoop === 'function') scheduleLoop(audioContext.currentTime);
+                    markAudioInteraction();
+                    startAudioKeepWarm();
+                    if (mg) {
+                        const now2 = audioContext.currentTime;
+                        mg.gain.linearRampToValueAtTime(1, now2 + TOGGLE_FADE_TIME);
+                    }
+                };
+                const armGesture = () => {
+                    const onGesture = () => {
+                        document.removeEventListener('click', onGesture);
+                        document.removeEventListener('keydown', onGesture);
+                        if (audioContext.state === 'suspended') { audioContext.resume().then(startAudio).catch(() => { }); }
+                        else { startAudio(); }
+                    };
+                    document.addEventListener('click', onGesture, { once: true });
+                    document.addEventListener('keydown', onGesture, { once: true });
+                };
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume().then(() => {
+                        if (audioContext.state === 'running') startAudio();
+                        else armGesture();
+                    }).catch(armGesture);
+                } else {
+                    startAudio();
+                }
             }
 
             // Initialize audio recovery when DOM is ready
@@ -2782,6 +2968,8 @@
 
             // Render rain effect — renders at half resolution (160x90) then upscales
             function renderRain(timestamp) {
+                // Stop loop when the game sector owns the screen (frees the main thread for the engine)
+                if (window.__sectorActive) return;
                 // Stop loop when page is not visible to save battery
                 if (animationPaused) return;
                 requestAnimationFrame(renderRain);
@@ -3258,6 +3446,7 @@
             }
 
             function ballAnimationLoop(currentTime) {
+                if (window.__sectorActive) return; // yield the main thread to the engine
                 if (animationPaused) return;
                 requestAnimationFrame(ballAnimationLoop);
                 if (currentTime - lastBallFrame < BALL_FRAME_INTERVAL) return;
@@ -3528,7 +3717,8 @@
                     method: 'POST',
                     headers: { 'X-Hardware-ID': hwid }
                 }).catch(() => { });
-                window.location.href = `/engine/?online=${id}`;
+                // Open the online level inside the in-page game sector (iframe).
+                GameSector.launch({ type: 'online', id: id });
             }
 
             function showOnline() {
@@ -3579,25 +3769,11 @@
                     return;
                 }
                 console.log('Loading level ' + num + '...');
-                // Remember which pack the player is on so we return to it
+                // Remember which pack the player is on so we return to it on exit.
                 sessionStorage.setItem('lastPackIndex', currentPackIndex);
-                // Fade out audio before navigating to prevent pop on page unload
-                const mg = (typeof ensureMasterGain === 'function') ? ensureMasterGain() : null;
-                if (mg && audioContext && audioContext.state === 'running') {
-                    const now = audioContext.currentTime;
-                    mg.gain.cancelScheduledValues(now);
-                    mg.gain.setValueAtTime(mg.gain.value, now);
-                    mg.gain.linearRampToValueAtTime(0, now + TOGGLE_FADE_TIME);
-                    setTimeout(() => {
-                        cancelScheduledLoop();
-                        if (audioContext && audioContext.state === 'running') {
-                            audioContext.suspend();
-                        }
-                        window.location.href = 'engine/?level=' + num;
-                    }, TOGGLE_FADE_TIME * 1000 + 10);
-                } else {
-                    window.location.href = 'engine/?level=' + num;
-                }
+                // Open the level inside the in-page game sector (iframe) behind the
+                // liquid transition. Audio suspend happens inside GameSector.launch().
+                GameSector.launch({ type: 'level', id: num });
             }
 
             // ========== LEVEL PACK PAGINATION SYSTEM ==========
@@ -3803,6 +3979,7 @@
 
                 // Keyboard navigation for level packs
                 document.addEventListener('keydown', (e) => {
+                    if (window.__sectorActive) return; // game sector owns input
                     // Only handle if offline menu is active
                     if (!offlineMenu.classList.contains('active')) return;
 
@@ -4843,6 +5020,7 @@
             }
             // Global ESC Handler
             document.addEventListener('keydown', (e) => {
+                if (window.__sectorActive) return; // game sector owns input
                 if (e.key === 'Escape') {
                     // Ignore if overlays are active
                     const introOverlay = document.getElementById('introOverlay');
@@ -5076,6 +5254,186 @@
             window.isCacheReady = function () {
                 return cacheReady;
             };
+
+            // ============================================================
+            // GAME SECTOR CONTROLLER  (iframe host + liquid transition)
+            // Same lexical scope as the menu script → calls suspendMenuMusic/
+            // resumeMenuMusic/showOffline/showOnline/rainActive directly.
+            // ============================================================
+            const GameSector = (function () {
+                const isReduced = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+                const READY_TIMEOUT_MS = 8000;   // reveal anyway if 'bounceReady' is missed (back button still exits)
+                const MIN_HOLD_MS = 260;         // min aqua dwell after full cover
+                const SWAP_SETTLE_MS = 220;      // cap for the restored-submenu paint before reveal
+                const COVER_SAFETY_MS = 900;     // fallback if transitionend is missed
+                const REVEAL_SAFETY_MS = 950;
+
+                let phase = 'idle';   // 'idle' | 'entering' | 'playing' | 'exiting'
+                let active = false, isOnline = false, frame = null;
+                let covered = false, ready = false, minHoldMet = false;
+                let readyTimer = null, holdTimer = null, pushedState = false;
+
+                const host = () => document.getElementById('gameSector');
+                const lt = document.getElementById('liquidTransition');
+                const sheet = lt ? lt.querySelector('.lt-sheet') : null;
+
+                function onSheetEnd(cb) {
+                    if (!sheet) { cb(); return; }
+                    let done = false;
+                    const finish = () => { if (done) return; done = true; sheet.removeEventListener('transitionend', h); cb(); };
+                    const h = (e) => { if (e.target !== sheet) return; if (e.propertyName === 'transform' || e.propertyName === 'opacity') finish(); };
+                    sheet.addEventListener('transitionend', h);
+                }
+                function clearTimers() {
+                    if (readyTimer) { clearTimeout(readyTimer); readyTimer = null; }
+                    if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+                }
+                function startCover(onCovered) {
+                    covered = false;
+                    if (!lt) { onCovered && onCovered(); return; }
+                    const reduced = isReduced();
+                    lt.classList.remove('lt-revealing', 'lt-reveal', 'lt-cover', 'lt-holding', 'lt-anim', 'lt-flash');
+                    lt.classList.add('lt-on');
+                    if (!reduced) { void lt.offsetWidth; lt.classList.add('lt-flash'); setTimeout(() => lt.classList.remove('lt-flash'), 600); }
+                    void lt.offsetWidth;                       // reflow → start from off-left / opacity 0
+                    if (!reduced) lt.classList.add('lt-anim');
+                    requestAnimationFrame(() => { lt.classList.add('lt-cover'); });
+                    let fired = false;
+                    const done = () => { if (fired) return; fired = true; covered = true; lt.classList.add('lt-holding'); onCovered && onCovered(); };
+                    onSheetEnd(done);
+                    setTimeout(done, COVER_SAFETY_MS);
+                }
+                function reveal(onDone) {
+                    if (!lt) { onDone && onDone(); return; }
+                    const reduced = isReduced();
+                    lt.classList.remove('lt-holding', 'lt-anim');
+                    if (!reduced) lt.classList.add('lt-revealing');
+                    void lt.offsetWidth;
+                    requestAnimationFrame(() => { lt.classList.remove('lt-cover'); lt.classList.add('lt-reveal'); });
+                    let fired = false;
+                    const done = () => {
+                        if (fired) return; fired = true;
+                        lt.classList.remove('lt-on', 'lt-anim', 'lt-revealing', 'lt-cover', 'lt-reveal', 'lt-holding');
+                        covered = false; onDone && onDone();
+                    };
+                    onSheetEnd(done);
+                    setTimeout(done, REVEAL_SAFETY_MS);
+                }
+                function teardownFrame() {
+                    if (frame) { try { frame.src = 'about:blank'; } catch (e) { } try { frame.remove(); } catch (e) { } frame = null; }
+                    const h = host(); if (h) h.style.display = 'none';
+                }
+                // Restart the menu's rAF loops that were gated off by __sectorActive.
+                function restartMenuLoops() {
+                    lastRainFrame = 0; lastBallFrame = 0; lastBallTick = performance.now();
+                    requestAnimationFrame(renderRain);
+                    if (ballTexturesLoaded) requestAnimationFrame(ballAnimationLoop);
+                }
+                function maybeReveal() {
+                    if (phase !== 'entering') return;
+                    if (covered && ready && minHoldMet) {
+                        phase = 'playing'; clearTimers();
+                        reveal(() => { try { if (frame) { frame.focus(); if (frame.contentWindow) frame.contentWindow.focus(); } } catch (e) { } });
+                    }
+                }
+                function onReady() { if (phase !== 'entering') return; ready = true; maybeReveal(); }
+                function onCoveredEnter() {
+                    if (phase === 'exiting') { doSwap(); return; }   // exit arrived before cover completed
+                    holdTimer = setTimeout(() => { minHoldMet = true; maybeReveal(); }, MIN_HOLD_MS);
+                    maybeReveal();
+                }
+                function doSwap() {                                  // runs under full aqua cover
+                    teardownFrame();                                 // 1) reclaim engine memory
+                    active = false; window.__sectorActive = false;   // 2) menu owns audio/input/loops again
+                    resumeMenuMusic();                               // 3) restore menu track (re-ramps masterGain 0→1)
+                    try { rainActive = true; } catch (e) { }
+                    restartMenuLoops();                              // 4) revive rain+ball rAF loops
+                    const restored = isOnline
+                        ? (function () { try { return showOnline(); } catch (e) { } })()
+                        : (function () { try { return showOffline(); } catch (e) { } })();  // rebuilds grid from lastPackIndex
+                    let revealed = false;
+                    const finish = () => {
+                        if (revealed) return; revealed = true;
+                        reveal(() => { phase = 'idle'; });
+                        pollVersion();                               // menu is long-lived now → re-check for updates
+                    };
+                    Promise.resolve(restored).then(finish);
+                    setTimeout(finish, SWAP_SETTLE_MS);              // safety cap so a slow init still reveals
+                }
+                function launch(opts) {
+                    if (active) return;
+                    active = true; window.__sectorActive = true;     // gates ALL menu audio/input/rAF paths
+                    phase = 'entering'; isOnline = (opts.type === 'online');
+                    covered = false; ready = false; minHoldMet = false;
+                    try { localStorage.setItem('audioInteraction', Date.now().toString()); } catch (e) { }
+                    // History entry so hardware/browser Back exits the level (not the site),
+                    // and a reload restores the right submenu.
+                    try { history.pushState({ bounceSector: true }, '', location.pathname + (isOnline ? '#online' : '#levels')); pushedState = true; } catch (e) { pushedState = false; }
+                    suspendMenuMusic();
+                    try { rainActive = false; } catch (e) { }
+                    const h = host();
+                    frame = document.createElement('iframe');
+                    frame.id = 'gameSectorFrame';
+                    frame.title = 'BouncEngine';
+                    frame.setAttribute('allow', 'autoplay; fullscreen');
+                    h.appendChild(frame);
+                    h.style.display = 'block';
+                    frame.src = isOnline
+                        ? ('/engine/?online=' + encodeURIComponent(opts.id))
+                        : ('/engine/?level=' + encodeURIComponent(opts.id));
+                    startCover(onCoveredEnter);
+                    clearTimers();
+                    readyTimer = setTimeout(onReady, READY_TIMEOUT_MS);
+                }
+                function exit() {
+                    if (!active || phase === 'idle' || phase === 'exiting') return;
+                    if (phase === 'entering') {
+                        phase = 'exiting'; clearTimers();
+                        if (covered) doSwap();                       // else onCoveredEnter() runs doSwap when cover completes
+                        return;
+                    }
+                    phase = 'exiting'; clearTimers();                // phase === 'playing'
+                    startCover(() => { doSwap(); });
+                }
+                async function pollVersion() {
+                    if (window.__sectorActive) return;
+                    try {
+                        const res = await fetch('/version.js?_=' + Date.now(), { cache: 'no-store' });
+                        const text = await res.text();
+                        const m = text.match(/APP_VERSION\s*=\s*'([^']+)'/);
+                        if (m && m[1] !== APP_VERSION) {
+                            if (navigator.serviceWorker) {
+                                const regs = await navigator.serviceWorker.getRegistrations();
+                                await Promise.all(regs.map(r => r.unregister()));
+                            }
+                            const names = await caches.keys();
+                            await Promise.all(names.map(n => caches.delete(n)));
+                            localStorage.setItem('isUpdating', 'true');
+                            location.reload();
+                        }
+                    } catch (e) { }
+                }
+                // Engine → parent bridge (strict same-origin + must be OUR frame)
+                window.addEventListener('message', function (e) {
+                    if (e.origin !== window.location.origin) return;
+                    if (!frame || e.source !== frame.contentWindow) return;
+                    const d = e.data || {};
+                    if (d.type === 'bounceReady') { onReady(); }
+                    else if (d.type === 'bounceExit') {
+                        if (typeof d.online === 'boolean') isOnline = d.online;
+                        exit();
+                    }
+                });
+                // Hardware/browser Back exits the level instead of leaving the site.
+                window.addEventListener('popstate', function () {
+                    if (active && phase !== 'idle' && phase !== 'exiting') { pushedState = false; exit(); }
+                });
+                // Long-lived menu → poll for updates when the tab becomes visible (sector idle only).
+                document.addEventListener('visibilitychange', function () {
+                    if (document.visibilityState === 'visible' && !window.__sectorActive) pollVersion();
+                });
+                return { launch: launch };
+            })();
         </script>
 
         <script>

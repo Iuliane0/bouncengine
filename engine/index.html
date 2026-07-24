@@ -745,7 +745,14 @@
                         window._levelAccessBlocked = true;
                         // Blank the page immediately to prevent any visual
                         document.documentElement.innerHTML = '';
-                        window.location.replace('../#levels');
+                        // Embedded as a sector: tell the parent to bail (navigating THIS
+                        // window would load a menu inside the iframe). Standalone: navigate.
+                        // (This runs before the _postToParent helper below exists, so inline it.)
+                        if (window.parent && window.parent !== window) {
+                            try { window.parent.postMessage({ type: 'bounceExit', reason: 'locked', online: false }, window.location.origin); } catch (e) { }
+                        } else {
+                            window.location.replace('../#levels');
+                        }
                         return;
                     }
                 }
@@ -754,6 +761,22 @@
     </script>
     <script>
         console.log("Commands can be executed. This is a public beta, expect bugs.");
+
+        // ========== GAME SECTOR BRIDGE ==========
+        // When embedded as an in-page iframe "sector" by the menu, the engine must
+        // NOT navigate itself (that would load a second menu inside the iframe).
+        // Instead it reports exits/readiness to the parent via postMessage. Opened
+        // standalone (/engine/?level=N directly) it keeps doing real navigation.
+        const _sectorEmbedded = !!(window.parent && window.parent !== window);
+        function _postToParent(msg) {
+            if (!_sectorEmbedded) return;
+            try { window.parent.postMessage(msg, window.location.origin); } catch (e) { }
+        }
+        // Release the AudioContext when this iframe is torn down (parent sets
+        // src='about:blank'), so contexts don't accumulate to the iOS ~4 ceiling.
+        window.addEventListener('pagehide', function () {
+            try { if (typeof audioContext !== 'undefined' && audioContext) audioContext.close(); } catch (e) { }
+        });
 
         // ========== ANTI-CHEAT SYSTEM ==========
         // Spoofed internal state with obfuscation and integrity checking
@@ -2444,6 +2467,10 @@
 
         function playKeepAlive() {
             if (!audioContext || !silenceBuffer) return;
+
+            // Keep the cross-page audio-activation carrier fresh so a restartLevel()
+            // reload (or a return to the menu sector) can still auto-init audio.
+            try { localStorage.setItem('audioInteraction', Date.now().toString()); } catch (e) { }
 
             // Resume context first
             if (audioContext.state === 'suspended') {
@@ -5902,8 +5929,12 @@
                 levelCompleteTimer--;
                 _deauthLevelState();
                 if (levelCompleteTimer <= 0) {
-                    // Redirect to menu levels screen
-                    window.location.href = '../#levels';
+                    if (_sectorEmbedded) {
+                        _postToParent({ type: 'bounceExit', reason: 'complete', online: false });
+                    } else {
+                        // Redirect to menu levels screen
+                        window.location.href = '../#levels';
+                    }
                 }
                 // Keep spiders moving during level complete
                 updateSpiders();
@@ -5917,7 +5948,11 @@
                 if (gameOverTimer <= 0) {
                     // Final write before leaving — absolutely guarantees 0/0
                     persistGameOver();
-                    window.location.href = '../#levels';
+                    if (_sectorEmbedded) {
+                        _postToParent({ type: 'bounceExit', reason: 'gameover', online: false });
+                    } else {
+                        window.location.href = '../#levels';
+                    }
                 }
                 // Continue to update spiders during game over
                 updateSpiders();
@@ -7197,8 +7232,10 @@
             } else {
                 saveSnapshot();     // Revert stats to pre-level values
             }
-            // Return to the correct menu page
-            if (_isOnlineLevel) {
+            // Return to the correct menu page (post to parent when embedded, else navigate)
+            if (_sectorEmbedded) {
+                _postToParent({ type: 'bounceExit', reason: 'exit', online: _isOnlineLevel });
+            } else if (_isOnlineLevel) {
                 window.location.href = '../#online';
             } else {
                 window.location.href = '../#levels';
@@ -7675,16 +7712,29 @@
             // Check if a level should be loaded from URL
             const onlineToLoad = checkOnlineLevel();
             const levelToLoad = checkURLLevel();
-            if (onlineToLoad) {
-                console.log('Loading online level ' + onlineToLoad + ' from URL parameter');
-                await loadOnlineLevel(onlineToLoad);
-            } else if (levelToLoad) {
-                console.log('Loading classic level ' + levelToLoad + ' from URL parameter');
-                loadClassicLevel(levelToLoad);
-                // Note: loadClassicLevel already initializes spiders with offsets
-            } else {
-                // Only call initSpiders for test level - classic levels handle this themselves
-                initSpiders();  // Initialize spider trajectory data
+            // ESCAPE HATCH: a failed level load (e.g. online fetch/404/offline) must never
+            // trap the user on a dead frame — bail to the parent sector (or navigate).
+            try {
+                if (onlineToLoad) {
+                    console.log('Loading online level ' + onlineToLoad + ' from URL parameter');
+                    await loadOnlineLevel(onlineToLoad);
+                } else if (levelToLoad) {
+                    console.log('Loading classic level ' + levelToLoad + ' from URL parameter');
+                    loadClassicLevel(levelToLoad);
+                    // Note: loadClassicLevel already initializes spiders with offsets
+                } else {
+                    // Only call initSpiders for test level - classic levels handle this themselves
+                    initSpiders();  // Initialize spider trajectory data
+                }
+            } catch (loadErr) {
+                console.error('Level load failed:', loadErr);
+                if (_sectorEmbedded) {
+                    _postToParent({ type: 'bounceExit', reason: 'error', online: !!onlineToLoad });
+                    return;
+                } else {
+                    window.location.href = '../#levels';
+                    return;
+                }
             }
 
             // Initialize anti-cheat system with initial state
@@ -7740,6 +7790,9 @@
             accumulator = 0;
             canvas.classList.remove('show-cursor');
             requestAnimationFrame(gameLoop);
+
+            // Tell the parent page (game sector) we're live so it can reveal us.
+            if (_sectorEmbedded) { _postToParent({ type: 'bounceReady' }); }
         }
 
 
