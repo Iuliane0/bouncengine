@@ -8,4 +8,4 @@
  *
  * Bump the string below to ship an update. Nothing else needs to change.
  */
-self.APP_VERSION = 'v0.9.9997';
+self.APP_VERSION = 'v0.9.9998';

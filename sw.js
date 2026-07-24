@@ -31,9 +31,14 @@ const PRECACHE_URLS = [
   '/songcredits.png',
   '/loading.gif',
   '/raylib.ttf',
-  '/intro.wav',
-  '/loop.wav',
-  '/silence.wav',
+  // Compressed audio (Opus + AAC fallback). Both encode sample-exact so the
+  // gapless menu loop stays seamless; ~16.4MB of WAV became ~2.6MB.
+  '/intro.ogg',
+  '/loop.ogg',
+  '/silence.ogg',
+  '/intro.m4a',
+  '/loop.m4a',
+  '/silence.m4a',
   '/engine/index.html',
   '/engine/assets.js',
   '/engine/chunkManager.js',

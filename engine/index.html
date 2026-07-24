@@ -2456,12 +2456,15 @@
             if (!audioContext || silenceBuffer) return;
 
             try {
-                const response = await fetch('/silence.wav');
+                // Opus with AAC fallback (matches the menu's format selection).
+                let ext = '.m4a';
+                try { if (document.createElement('audio').canPlayType('audio/ogg; codecs=opus')) ext = '.ogg'; } catch (e) { }
+                const response = await fetch('/silence' + ext);
                 const arrayBuffer = await response.arrayBuffer();
                 silenceBuffer = await audioContext.decodeAudioData(arrayBuffer);
                 console.log('[Audio] Silence buffer loaded');
             } catch (e) {
-                console.warn('[Audio] Failed to load silence.wav:', e);
+                console.warn('[Audio] Failed to load silence buffer:', e);
             }
         }
 

@@ -56,31 +56,21 @@
             document.documentElement.classList.add('touch-mode');
         }
 
-        // Disable all refresh and DevTools keyboard shortcuts
+        // Block accidental refresh mid-game (F5 / Ctrl+R), which would drop progress.
+        // NOTE: DevTools/view-source shortcuts are deliberately NOT blocked — the source
+        // is public (github.com/Iuliane0/bouncengine), so it was pure theatre, and those
+        // key combos overlap with accessibility and browser shortcuts.
         document.addEventListener('keydown', function (e) {
             const key = e.key.toLowerCase();
             const ctrl = e.ctrlKey || e.metaKey;
-            const shift = e.shiftKey;
 
-            // Block refresh: F5, Ctrl+R, Ctrl+Shift+R
             if (e.key === 'F5' || (ctrl && key === 'r')) {
                 e.preventDefault();
                 e.stopPropagation();
                 return false;
             }
-
-            // Block DevTools: F12, Ctrl+Shift+I/J/C/K/E/M/D, Ctrl+U
-            if (
-                e.key === 'F12' ||
-                (ctrl && shift && ['i', 'j', 'c', 'k', 'e', 'm', 'd'].includes(key)) ||
-                (ctrl && key === 'u')
-            ) {
-                e.preventDefault();
-                e.stopPropagation();
-                return false;
-            }
         }, true);
-        // Disable Context Menu (Right-Click) to prevent "Inspect" and "Reload"
+        // Disable Context Menu (Right-Click) so it can't interrupt gameplay
         document.addEventListener('contextmenu', function (e) {
             e.preventDefault();
             return false;
@@ -2069,6 +2059,16 @@
             const TOGGLE_ON_B64 = 'iVBORw0KGgoAAAANSUhEUgAAABEAAAAKCAYAAABSfLWiAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABmZVhJZklJKgAIAAAAAQBphwQAAQAAABoAAAAAAAAAAwAAkAcABAAAADAyMzABoAMAAQAAAAEAAAAFoAQAAQAAAEQAAAAAAAAAAgABAAIABAAAAFI5OAACAAcABAAAADAxMDAAAAAAIvvHMbnUA7gAAAAxSURBVChTY2AgDP4TgTEEMPCBAwdwYoQh/yfgxqOGYGIsAY0FEzakoaEBJ6ayIRRiABnRUY33Ec7NAAAAAElFTkSuQmCC';
             const TOGGLE_OFF_B64 = 'iVBORw0KGgoAAAANSUhEUgAAABEAAAAKCAYAAABSfLWiAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABmZVhJZklJKgAIAAAAAQBphwQAAQAAABoAAAAAAAAAAwAAkAcABAAAADAyMzABoAMAAQAAAAEAAAAFoAQAAQAAAEQAAAAAAAAAAgABAAIABAAAAFI5OAACAAcABAAAADAxMDAAAAAAIvvHMbnUA7gAAAA0SURBVChTY2BgYPhPBCYI/h84cAAnxmIgNkzYEEVFRZx4uBpCCKNrxGpIQ0MDTkxfQyjFABFLGCF57Rp/AAAAAElFTkSuQmCC';
 
+            // Audio format: Opus (smallest) with AAC fallback for older Safari/iOS.
+            // Both encode sample-exact, so the gapless menu loop stays seamless.
+            const AUDIO_EXT = (function () {
+                try {
+                    const a = document.createElement('audio');
+                    if (a.canPlayType('audio/ogg; codecs=opus')) return '.ogg';
+                } catch (e) { }
+                return '.m4a';
+            })();
+
             // Settings state
             let shaderDisabled = localStorage.getItem('shaderDisabled') === 'true';
             let musicMuted = localStorage.getItem('musicMuted') === 'true';
@@ -2508,14 +2508,14 @@
 
                 // Try to load missing buffers
                 if (!introBuffer) {
-                    const buffer = await loadBuffer('intro.wav');
+                    const buffer = await loadBuffer('intro' + AUDIO_EXT);
                     if (buffer) {
                         introBuffer = buffer;
                         console.log('Intro buffer recovered');
                     }
                 }
                 if (!loopBuffer) {
-                    const buffer = await loadBuffer('loop.wav');
+                    const buffer = await loadBuffer('loop' + AUDIO_EXT);
                     if (buffer) {
                         loopBuffer = buffer;
                         console.log('Loop buffer recovered');
@@ -2651,7 +2651,7 @@
                 if (!audioContext || silenceBuffer) return;
 
                 try {
-                    const response = await fetch('/silence.wav');
+                    const response = await fetch('/silence' + AUDIO_EXT);
                     const arrayBuffer = await response.arrayBuffer();
                     silenceBuffer = await audioContext.decodeAudioData(arrayBuffer);
                 } catch (e) {
@@ -3995,7 +3995,7 @@
                     }
 
                     // Load intro audio as buffer
-                    fetch('intro.wav')
+                    fetch('intro' + AUDIO_EXT)
                         .then(r => r.arrayBuffer())
                         .then(data => audioContext.decodeAudioData(data))
                         .then(buffer => {
@@ -4006,7 +4006,7 @@
                         .catch(e => { console.error('Intro load failed:', e); audioLoadFailed = true; checkAllLoaded(); });
 
                     // Load loop audio as buffer
-                    fetch('loop.wav')
+                    fetch('loop' + AUDIO_EXT)
                         .then(r => r.arrayBuffer())
                         .then(data => audioContext.decodeAudioData(data))
                         .then(buffer => {
@@ -5246,7 +5246,10 @@
                     if (!lt) { onCovered && onCovered(); return; }
                     lt.classList.add('lt-on');
                     void lt.offsetWidth;                       // reflow so the transition runs from blur(0)
+                    // rAF for frame-accurate start, plus a timeout backup: rAF is frozen
+                    // while the tab/pane isn't compositing, and the class must still land.
                     requestAnimationFrame(() => { lt.classList.add('lt-blur'); });
+                    setTimeout(() => { lt.classList.add('lt-blur'); }, 32);
                     let fired = false;
                     const done = () => { if (fired) return; fired = true; covered = true; onCovered && onCovered(); };
                     onBlurEnd(done);
