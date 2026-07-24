@@ -1,0 +1,3916 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>bouncengi.ne</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-dark: #0a0a0f;
+            --bg-panel: #12121a;
+            --bg-hover: #1e1e2a;
+            --bg-active: #2a2a3a;
+            --bg-input: #0d0d12;
+            --border: #2a2a35;
+            --border-light: #3a3a4a;
+            --text: #e8e8f0;
+            --text-dim: #7a7a8a;
+            --text-muted: #5a5a6a;
+            --accent: #5a8fff;
+            --accent-hover: #7aa4ff;
+            --accent-glow: rgba(90, 143, 255, 0.3);
+            --danger: #ff5a5a;
+            --danger-hover: #ff7a7a;
+            --success: #5aff8a;
+            --warning: #ffaa5a;
+            --select-mode: #ff5aff;
+            --select-glow: rgba(255, 90, 255, 0.3);
+        }
+
+        body {
+            background: var(--bg-dark);
+            color: var(--text);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-dark);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--border-light);
+        }
+
+        /* Top Bar */
+        .top-bar {
+            background: linear-gradient(180deg, var(--bg-panel) 0%, var(--bg-dark) 100%);
+            border-bottom: 1px solid var(--border);
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            height: 56px;
+            flex-shrink: 0;
+        }
+
+        .top-bar h1 {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text);
+            letter-spacing: 0.5px;
+        }
+
+        .top-bar h1 span {
+            color: var(--accent);
+        }
+
+        .divider {
+            width: 1px;
+            height: 24px;
+            background: var(--border);
+            margin: 0 4px;
+        }
+
+        .top-bar input[type="text"] {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            width: 180px;
+            transition: all 0.2s ease;
+        }
+
+        .top-bar input[type="text"]:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .btn {
+            background: var(--bg-hover);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 8px 18px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn:hover {
+            background: var(--bg-active);
+            border-color: var(--border-light);
+            transform: translateY(-1px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: var(--accent-hover);
+            border-color: var(--accent-hover);
+            box-shadow: 0 4px 12px var(--accent-glow);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .btn-icon {
+            padding: 8px 10px;
+        }
+
+        .spacer {
+            flex: 1;
+        }
+
+        /* Mode Toggle */
+        .mode-toggle {
+            display: flex;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 3px;
+            gap: 2px;
+        }
+
+        .mode-btn {
+            padding: 6px 14px;
+            border-radius: 5px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            background: transparent;
+            color: var(--text-dim);
+        }
+
+        .mode-btn:hover {
+            color: var(--text);
+            background: var(--bg-hover);
+        }
+
+        .mode-btn.active {
+            background: var(--accent);
+            color: #fff;
+            box-shadow: 0 2px 8px var(--accent-glow);
+        }
+
+        .mode-btn.active.select-mode {
+            background: var(--select-mode);
+            box-shadow: 0 2px 8px var(--select-glow);
+        }
+
+        /* Main Layout */
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 220px;
+            background: var(--bg-panel);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            overflow-y: auto;
+        }
+
+        .sidebar-section {
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sidebar-header {
+            padding: 12px 14px;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.15s ease;
+        }
+
+        .sidebar-header:hover {
+            background: var(--bg-hover);
+            color: var(--text-dim);
+        }
+
+        .sidebar-header .arrow {
+            transition: transform 0.2s ease;
+            font-size: 8px;
+        }
+
+        .sidebar-section.collapsed .arrow {
+            transform: rotate(-90deg);
+        }
+
+        .sidebar-section.collapsed .sidebar-content {
+            display: none;
+        }
+
+        .sidebar-content {
+            padding: 8px 10px 12px;
+        }
+
+        .tile-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+        }
+
+        .tile-btn {
+            aspect-ratio: 1;
+            background: #252530;
+            border: 2px solid #3a3a48;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: var(--text-dim);
+            transition: all 0.15s ease;
+            position: relative;
+        }
+
+        .tile-btn:hover {
+            background: #303040;
+            border-color: #4a4a58;
+            transform: scale(1.05);
+        }
+
+        .tile-btn.selected {
+            border-color: var(--accent);
+            background: #353548;
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .tile-btn canvas {
+            width: 26px;
+            height: 26px;
+            image-rendering: pixelated;
+        }
+
+        .tile-btn .tile-label {
+            position: absolute;
+            bottom: -14px;
+            font-size: 8px;
+            white-space: nowrap;
+        }
+
+        /* Canvas Area */
+        .canvas-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: #050508;
+        }
+
+        #editorCanvas {
+            image-rendering: pixelated;
+            cursor: crosshair;
+        }
+
+        .canvas-overlay {
+            position: absolute;
+            padding: 6px 12px;
+            background: rgba(10, 10, 15, 0.85);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 11px;
+            color: var(--text-dim);
+            pointer-events: none;
+        }
+
+        .zoom-indicator {
+            bottom: 12px;
+            right: 12px;
+        }
+
+        .coords-indicator {
+            bottom: 12px;
+            left: 12px;
+        }
+
+        .mode-indicator {
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }
+
+        .mode-indicator.build-mode {
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .mode-indicator.select-mode {
+            color: var(--select-mode);
+            border-color: var(--select-mode);
+        }
+
+        /* Right Panel - Compact Properties */
+        .right-panel {
+            width: 200px;
+            background: var(--bg-panel);
+            border-left: 1px solid var(--border);
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            flex-shrink: 0;
+            overflow-y: auto;
+        }
+
+        .panel-section {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .panel-section h3 {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .panel-section h3::before {
+            content: '';
+            width: 3px;
+            height: 12px;
+            background: var(--accent);
+            border-radius: 2px;
+        }
+
+        .form-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .form-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .form-row label {
+            font-size: 11px;
+            color: var(--text-dim);
+            min-width: 50px;
+        }
+
+        .form-row input[type="number"] {
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 6px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            width: 60px;
+            transition: all 0.2s ease;
+        }
+
+        .form-row input[type="number"]:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px var(--accent-glow);
+        }
+
+        /* Style number input spinners */
+        .form-row input[type="number"]::-webkit-inner-spin-button,
+        .form-row input[type="number"]::-webkit-outer-spin-button {
+            opacity: 1;
+            background: var(--bg-hover);
+            border-left: 1px solid var(--border);
+            cursor: pointer;
+            height: 100%;
+        }
+
+        .form-row input[type="number"]::-webkit-inner-spin-button:hover,
+        .form-row input[type="number"]::-webkit-outer-spin-button:hover {
+            background: var(--bg-active);
+        }
+
+        /* Custom dropdown styles */
+        .custom-dropdown {
+            position: relative;
+            flex: 1;
+        }
+
+        .custom-dropdown-selected {
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 6px 28px 6px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            position: relative;
+            user-select: none;
+        }
+
+        .custom-dropdown-selected::after {
+            content: '';
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-top: 5px solid var(--text-dim);
+        }
+
+        .custom-dropdown-selected:hover {
+            background: var(--bg-hover);
+            border-color: var(--border-light);
+        }
+
+        .custom-dropdown.open .custom-dropdown-selected {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px var(--accent-glow);
+        }
+
+        .custom-dropdown-options {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            margin-top: 2px;
+            z-index: 1000;
+            overflow: hidden;
+        }
+
+        .custom-dropdown.open .custom-dropdown-options {
+            display: block;
+        }
+
+        .custom-dropdown-option {
+            padding: 8px 10px;
+            font-size: 11px;
+            color: var(--text);
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+
+        .custom-dropdown-option:hover {
+            background: var(--bg-hover);
+        }
+
+        .custom-dropdown-option.selected {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 10px;
+            width: 100%;
+            margin-top: 8px;
+            justify-content: center;
+        }
+
+        /* Keyboard hints */
+        .hints-panel {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .hints-panel h4 {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+
+        .hints {
+            font-size: 10px;
+            color: var(--text-dim);
+            line-height: 1.8;
+        }
+
+        .hint-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2px 0;
+        }
+
+        kbd {
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'SF Mono', 'Consolas', monospace;
+            font-size: 9px;
+            color: var(--text);
+        }
+
+        /* Selection mode styles */
+        .selection-info {
+            background: linear-gradient(135deg, var(--bg-input) 0%, rgba(255, 90, 255, 0.1) 100%);
+            border: 1px solid var(--select-mode);
+            border-radius: 8px;
+            padding: 12px;
+            display: none;
+        }
+
+        .selection-info.visible {
+            display: block;
+        }
+
+        .selection-info h3 {
+            color: var(--select-mode);
+        }
+
+        .selection-info h3::before {
+            background: var(--select-mode);
+        }
+
+
+
+        /* Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+
+        .modal-overlay.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            min-width: 360px;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            transform: translateY(8px) scale(0.97);
+            transition: transform 0.2s ease;
+        }
+
+        .modal-overlay.visible .modal {
+            transform: translateY(0) scale(1);
+        }
+
+        .modal h2 {
+            font-size: 16px;
+            margin-bottom: 20px;
+            color: var(--text);
+        }
+
+        .modal-row {
+            margin-bottom: 16px;
+        }
+
+        .modal-row label {
+            display: block;
+            font-size: 11px;
+            color: var(--text-dim);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .modal-row input {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+
+        .modal-row input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-buttons .btn {
+            flex: 1;
+            justify-content: center;
+        }
+
+        .btn-secondary {
+            background: var(--bg-hover);
+            border-color: var(--border);
+        }
+
+        .btn-success {
+            background: #2d8a4e;
+            border-color: #2d8a4e;
+            color: #fff;
+        }
+
+        .btn-success:hover {
+            background: #3da261;
+            border-color: #3da261;
+        }
+
+        /* Load Modal Tabs */
+        .load-tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 16px;
+            background: var(--bg-input);
+            padding: 4px;
+            border-radius: 8px;
+        }
+
+        .load-tab {
+            flex: 1;
+            padding: 8px 16px;
+            border: none;
+            background: transparent;
+            color: var(--text-dim);
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .load-tab:hover {
+            color: var(--text);
+            background: var(--bg-hover);
+        }
+
+        .load-tab.active {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .level-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+        }
+
+        .level-item {
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .level-item:last-child {
+            border-bottom: none;
+        }
+
+        .level-item:hover {
+            background: var(--bg-hover);
+        }
+
+        .level-item-name {
+            font-size: 13px;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .level-item-meta {
+            font-size: 10px;
+            color: var(--text-dim);
+        }
+
+        .level-list-empty {
+            padding: 30px;
+            text-align: center;
+            color: var(--text-dim);
+            font-size: 12px;
+        }
+
+        .level-item-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .btn-tiny {
+            padding: 4px 8px;
+            font-size: 10px;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            border-color: var(--danger);
+            color: #fff;
+        }
+
+        .btn-danger:hover {
+            background: var(--danger-hover);
+            border-color: var(--danger-hover);
+        }
+
+        /* Custom message box */
+        .msgbox-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            pointer-events: none;
+        }
+
+        .msgbox-overlay.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .msgbox {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 24px;
+            min-width: 300px;
+            max-width: 420px;
+            transform: translateY(8px) scale(0.97);
+            transition: transform 0.2s ease;
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+        }
+
+        .msgbox-overlay.visible .msgbox {
+            transform: translateY(0) scale(1);
+        }
+
+        .msgbox-text {
+            font-size: 13px;
+            color: var(--text);
+            line-height: 1.6;
+            margin-bottom: 20px;
+            white-space: pre-line;
+        }
+
+        .msgbox-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        /* Touchscreen blocker overlay */
+        .touch-blocker {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-dark);
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .touch-blocker-icon {
+            font-size: 48px;
+            opacity: 0.6;
+        }
+
+        .touch-blocker h2 {
+            font-size: 18px;
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        .touch-blocker p {
+            font-size: 13px;
+            color: var(--text-dim);
+            text-align: center;
+            max-width: 360px;
+            line-height: 1.6;
+        }
+
+        .touch-blocker .btn {
+            margin-top: 8px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Touchscreen-only device blocker -->
+    <div class="touch-blocker" id="touchBlocker">
+        <div class="touch-blocker-icon">🖱️⌨️</div>
+        <h2>Mouse & Keyboard Required</h2>
+        <p>The level editor requires a mouse and keyboard to operate. It's not that I'm not allowing you to use it, it's
+            simply unsupported at the moment.
+            Please connect a mouse and keyboard to use the
+            editor, or switch to a desktop device.</p>
+        <a href="/#account" class="btn btn-primary">Return Home</a>
+    </div>
+
+    <!-- Editor UI lives in a template so DOM is NOT created until the device check passes -->
+    <template id="editorTemplate">
+        <!-- Custom Message Box -->
+        <div class="msgbox-overlay" id="msgboxOverlay">
+            <div class="msgbox">
+                <div class="msgbox-text" id="msgboxText"></div>
+                <div class="msgbox-buttons" id="msgboxButtons"></div>
+            </div>
+        </div>
+
+        <!-- Save Modal -->
+        <div class="modal-overlay" id="saveModal">
+            <div class="modal">
+                <h2>Save Level</h2>
+                <div class="modal-row">
+                    <label>Level Name</label>
+                    <input type="text" id="levelName" placeholder="Enter level name" value="Untitled">
+                </div>
+                <div class="modal-buttons">
+                    <button class="btn btn-secondary" id="btnSaveCancel">Cancel</button>
+                    <button class="btn btn-success" id="btnSaveLocal">Save</button>
+                    <button class="btn btn-primary" id="btnSaveUpload">Upload</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Load Modal -->
+        <div class="modal-overlay" id="loadModal">
+            <div class="modal">
+                <h2>Load Level</h2>
+                <div class="load-tabs">
+                    <button class="load-tab active" id="tabOnline">☁️ Online</button>
+                    <button class="load-tab" id="tabLocal">💾 Local</button>
+                </div>
+                <div class="level-list" id="levelList">
+                    <div class="level-list-empty">Loading...</div>
+                </div>
+                <div class="modal-buttons">
+                    <button class="btn btn-secondary" id="btnLoadCancel">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Bar -->
+        <div class="top-bar" id="editorTopBar">
+            <h1>bounc<span>editor</span></h1>
+
+            <div class="mode-toggle">
+                <button class="mode-btn active" id="buildModeBtn" title="Build Mode (B)">🔨 Build</button>
+                <button class="mode-btn" id="selectModeBtn" title="Select Mode (V)">✦ Select</button>
+            </div>
+
+            <div class="spacer"></div>
+            <button class="btn" id="btnHome" onclick="window.location.href='/#account'"
+                title="Return to Menu">Main Menu</button>
+            <button class="btn" id="btnNew">New</button>
+            <button class="btn" id="btnLoad">Load</button>
+            <button class="btn btn-primary" id="btnSave">Save</button>
+        </div>
+
+        <div class="main-container">
+            <!-- Left Sidebar - Object Palette -->
+            <div class="sidebar">
+                <div class="sidebar-section">
+                    <div class="sidebar-header">
+                        <span>Basic</span>
+                        <span class="arrow">▼</span>
+                    </div>
+                    <div class="sidebar-content">
+                        <div class="tile-grid" id="tilesBasic"></div>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-header">
+                        <span>Hazards</span>
+                        <span class="arrow">▼</span>
+                    </div>
+                    <div class="sidebar-content">
+                        <div class="tile-grid" id="tilesHazards"></div>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-header">
+                        <span>Powerups</span>
+                        <span class="arrow">▼</span>
+                    </div>
+                    <div class="sidebar-content">
+                        <div class="tile-grid" id="tilesPowerups"></div>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-header">
+                        <span>Rings</span>
+                        <span class="arrow">▼</span>
+                    </div>
+                    <div class="sidebar-content">
+                        <div class="tile-grid" id="tilesRings"></div>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-header">
+                        <span>Special</span>
+                        <span class="arrow">▼</span>
+                    </div>
+                    <div class="sidebar-content">
+                        <div class="tile-grid" id="tilesSpecial"></div>
+                    </div>
+                </div>
+
+                <div style="padding: 14px;">
+                    <div class="hints-panel">
+                        <h4>Controls</h4>
+                        <div class="hints">
+                            <div class="hint-row"><span>Place</span><kbd>LMB</kbd></div>
+                            <div class="hint-row"><span>Erase</span><kbd>RMB</kbd></div>
+                            <div class="hint-row"><span>Pan</span><kbd>MMB</kbd></div>
+                            <div class="hint-row"><span>Zoom</span><kbd>Scroll</kbd></div>
+                            <div class="hint-row"><span>Rotate</span><kbd>R</kbd></div>
+                            <div class="hint-row"><span>Build Mode</span><kbd>B</kbd></div>
+                            <div class="hint-row"><span>Select Mode</span><kbd>V</kbd></div>
+                        </div>
+                    </div>
+                    <div class="hints-panel" style="margin-top: 10px;" id="selectHints">
+                        <h4>Select Mode</h4>
+                        <div class="hints">
+                            <div class="hint-row"><span>Move</span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>
+                            </div>
+                            <div class="hint-row"><span>Rotate</span><kbd>Q</kbd> / <kbd>E</kbd></div>
+                            <div class="hint-row"><span>Deselect</span><kbd>Esc</kbd></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Canvas -->
+            <div class="canvas-container" id="canvasContainer">
+                <canvas id="editorCanvas"></canvas>
+                <div class="canvas-overlay coords-indicator" id="coordsIndicator">0, 0</div>
+                <div class="canvas-overlay zoom-indicator" id="zoomIndicator">2.0×</div>
+                <div class="canvas-overlay mode-indicator build-mode" id="modeIndicator">Build Mode</div>
+            </div>
+
+            <!-- Right Panel - Properties -->
+            <div class="right-panel">
+                <div class="panel-section">
+                    <h3>Level Size</h3>
+                    <div class="form-row">
+                        <label>Width</label>
+                        <input type="number" id="levelWidth" value="11" min="11" max="1000">
+                    </div>
+                    <div class="form-row">
+                        <label>H. Level</label>
+                        <input type="number" id="levelInput" value="1" min="1" max="142">
+                    </div>
+                    <div class="form-row">
+                        <label>Height</label>
+                        <span id="levelHeightDisplay" style="font-size:11px;color:var(--text);">8 cells</span>
+                    </div>
+                    <button class="btn btn-small" id="btnResize">Resize</button>
+                </div>
+
+                <div class="panel-section">
+                    <h3>Spawn Point</h3>
+                    <div class="form-row">
+                        <label>Col</label>
+                        <input type="number" id="spawnCol" value="2" min="0">
+                    </div>
+                    <div class="form-row">
+                        <label>Row</label>
+                        <input type="number" id="spawnRow" value="2" min="0">
+                    </div>
+                    <div class="form-row">
+                        <label>Ball</label>
+                        <div class="custom-dropdown" id="spawnSizeDropdown">
+                            <div class="custom-dropdown-selected" data-value="12">Deflated</div>
+                            <div class="custom-dropdown-options">
+                                <div class="custom-dropdown-option selected" data-value="12">Deflated</div>
+                                <div class="custom-dropdown-option" data-value="16">Inflated</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h3>Door Position</h3>
+                    <div class="form-row">
+                        <label>Col</label>
+                        <input type="number" id="doorCol" value="20" min="0">
+                    </div>
+                    <div class="form-row">
+                        <label>Row</label>
+                        <input type="number" id="doorRow" value="3" min="0">
+                    </div>
+                    <button class="btn btn-small" id="btnPlaceDoor">Place Door</button>
+                </div>
+
+                <!-- Selection Info Panel (shown in select mode) -->
+                <div class="panel-section selection-info" id="selectionInfo">
+                    <h3>Selected Object</h3>
+                    <div id="selectionDetails">
+                        <p style="font-size:11px;color:var(--text-dim);">Click an object to select it</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <script>
+        // ========== DEVICE CHECK (runs before any editor code) ==========
+        (function () {
+            const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
+            function mountEditor() {
+                // Hide blocker
+                document.getElementById('touchBlocker').style.display = 'none';
+                // Clone template content into body (creates the editor DOM)
+                const template = document.getElementById('editorTemplate');
+                document.body.appendChild(template.content);
+                // Dynamically load storage.js then boot the editor
+                const storageScript = document.createElement('script');
+                storageScript.src = '../storage.js';
+                storageScript.onload = function () {
+                    window.__editorReady = true;
+                    window.dispatchEvent(new Event('editor-mount'));
+                };
+                document.body.appendChild(storageScript);
+            }
+
+            if (!isTouchDevice) {
+                // No touchscreen — mount immediately
+                mountEditor();
+            } else {
+                // Touchscreen detected — wait for mouse/keyboard proof
+                let resolved = false;
+
+                function resolve(mount) {
+                    if (resolved) return;
+                    resolved = true;
+                    window.removeEventListener('mousemove', onMouseMove);
+                    window.removeEventListener('keydown', onKeyDown);
+                    clearTimeout(timeout);
+                    if (mount) mountEditor();
+                    // If not mounting, blocker is already visible
+                }
+
+                function onMouseMove(e) {
+                    if (e.movementX === 0 && e.movementY === 0) return;
+                    resolve(true);
+                }
+
+                function onKeyDown() {
+                    resolve(true);
+                }
+
+                window.addEventListener('mousemove', onMouseMove);
+                window.addEventListener('keydown', onKeyDown);
+
+                // If no mouse/keyboard activity after 3 seconds, stay blocked
+                const timeout = setTimeout(function () { resolve(false); }, 3000);
+            }
+        })();
+    </script>
+
+    <script>
+        // ========== EDITOR SCRIPT (only runs if editor DOM was mounted) ==========
+        if (!window.__editorReady) {
+            // Editor not mounted yet — wait for mount event, or bail if touch-only
+            window.addEventListener('editor-mount', function () {
+                // Re-execute this script block by eval — not needed, we use the approach below
+            });
+        }
+
+        function bootEditorApp() {
+            // ========== TILE DEFINITIONS ==========
+            const TILE_DEFS = {
+                // Basic
+                basic: [
+                    { id: 0, name: 'Air', color: '#b0e070' },
+                    { id: 1, name: 'Block', color: '#8b6e53' },
+                    { id: 56, name: 'Hollow', color: '#8b6e53', hollow: true },
+                    { id: 2, name: 'Trampoline', color: '#ff6b6b' },
+                    { id: 30, name: 'Slope', color: '#a07050', rotatable: true, rotations: [30, 31, 32, 33] },
+                    { id: 34, name: 'Trampoline Slope', color: '#ff8080', rotatable: true, rotations: [34, 35, 36, 37] },
+                ],
+                // Hazards
+                hazards: [
+                    { id: 3, name: 'Candle', color: '#ffaa00', rotatable: true, rotations: [3, 4, 5, 6] },
+                    { id: -2, name: 'Spider', color: '#ff00ff', isSpider: true },
+                ],
+                // Powerups
+                powerups: [
+                    { id: 43, name: 'Pump', color: '#00aaff', rotatable: true, rotations: [43, 44, 45, 46] },
+                    { id: 39, name: 'Valve', color: '#ff00aa', rotatable: true, rotations: [39, 40, 41, 42] },
+                    { id: 47, name: 'Gravity', color: '#aa00ff', rotatable: true, rotations: [47, 48, 49, 50] },
+                    { id: 51, name: 'Jump', color: '#00ffaa', rotatable: true, rotations: [51, 52, 53, 54] },
+                    { id: 38, name: 'Speed', color: '#ffff00' },
+                    { id: 55, name: 'Life', color: '#ff5555' },
+                ],
+                // Rings
+                rings: [
+                    { id: 13, name: 'Vertical Ring', color: '#ffd700', multiTile: 'vring', ids: [13, 14] },
+                    { id: 15, name: 'Horizontal Ring', color: '#ffd700', multiTile: 'hring', ids: [15, 16] },
+                    { id: 21, name: 'Big Vertical Ring', color: '#ffcc00', multiTile: 'bigvring', ids: [21, 22] },
+                    { id: 23, name: 'Big Horizontal Ring', color: '#ffcc00', multiTile: 'bighring', ids: [23, 24] },
+                ],
+                // Special
+                special: [
+                    { id: 7, name: 'Checkpoint', color: '#00ff00' },
+                    { id: 9, name: 'Door', color: '#00ff00', multiTile: 'door', size: [2, 2] },
+                    { id: 64, name: 'Water', color: '#00ff00', isFlag: true },
+                    { id: -1, name: 'Spawn', color: '#00ff00', isSpawn: true },
+                ]
+            };
+
+            const WATER_FLAG = 64;
+
+            // Slope mask f[][] from original - bottom-right triangle is solid
+            const f = [
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+                [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
+                [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1],
+                [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1],
+                [0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1],
+                [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
+                [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+            ]
+
+            // ========== LEVEL STATE ==========
+            let levelWidth = 11;
+            let currentLevel = 1; // Level 1 = 8 cells, each level adds 7
+            let levelHeight = 8;  // Calculated from currentLevel
+            let tiles = new Uint8Array(levelWidth * levelHeight);
+            let spiders = [];
+
+            // Spawn point
+            let spawnCol = 2;
+            let spawnRow = 2;
+            let spawnSize = 12; // 12 = small ball, 16 = large ball
+
+            // Door position
+            let doorCol = 8;
+            let doorRow = 5;
+
+            // Level height calculation: Level 1 = 8 cells, each additional level adds 7 cells
+            const BASE_HEIGHT = 8;
+            const HEIGHT_PER_LEVEL = 7;
+            const MAX_LEVEL = 142;
+            const MAX_HEIGHT = 995;
+
+            function calculateHeight(level) {
+                return Math.min(BASE_HEIGHT + (level - 1) * HEIGHT_PER_LEVEL, MAX_HEIGHT);
+            }
+
+            // Selected tool
+            let selectedTile = TILE_DEFS.basic[1]; // Block
+            let currentRotation = 0;
+
+            // ========== EDITOR MODE ==========
+            let editorMode = 'build'; // 'build' or 'select'
+
+            // ========== SELECTION STATE ==========
+            let selectedObject = null; // { type: 'tile'|'spider'|'spawn'|'door', col, row, spiderIndex?, handleType? }
+            let selectionHue = 0; // For RGB cycling effect
+            let selectionAnimTime = 0;
+
+            // Non-destructive tile movement tracking
+            // When a tile is selected and being moved, we track:
+            // - The tile's original position (where to clear when finally placed)
+            // - The tile value being moved
+            // - What was under the current position (to restore when moving away)
+            let movingTileOriginalIdx = -1;      // Original position index (cleared on final placement)
+            let movingTileValue = 0;              // The tile value being moved
+            let movingTileUnderValue = 0;         // What's under current position (restore when moving away)
+            let movingTileCurrentIdx = -1;        // Current position during movement
+
+            // ========== UNDO / REDO ==========
+            const UNDO_LIMIT = 50;
+            let undoStack = [];
+            let redoStack = [];
+
+            function snapshotState() {
+                return {
+                    tiles: tiles.slice(),
+                    spiders: spiders.map(s => ({ ...s })),
+                    spawnCol, spawnRow,
+                    doorCol, doorRow
+                };
+            }
+
+            function pushUndo() {
+                undoStack.push(snapshotState());
+                if (undoStack.length > UNDO_LIMIT) undoStack.shift();
+                redoStack = [];
+            }
+
+            function applySnapshot(snap) {
+                tiles = new Uint8Array(snap.tiles);
+                spiders = snap.spiders.map(s => ({ ...s }));
+                spawnCol = snap.spawnCol;
+                spawnRow = snap.spawnRow;
+                doorCol = snap.doorCol;
+                doorRow = snap.doorRow;
+                document.getElementById('spawnCol').value = spawnCol;
+                document.getElementById('spawnRow').value = spawnRow;
+                document.getElementById('doorCol').value = doorCol;
+                document.getElementById('doorRow').value = doorRow;
+                selectedObject = null;
+                movingTileOriginalIdx = -1;
+                movingTileValue = 0;
+                movingTileUnderValue = 0;
+                movingTileCurrentIdx = -1;
+                updateSelectionInfo();
+                markUnsavedChanges();
+            }
+
+            function undo() {
+                if (undoStack.length === 0) return;
+                redoStack.push(snapshotState());
+                applySnapshot(undoStack.pop());
+            }
+
+            function redo() {
+                if (redoStack.length === 0) return;
+                undoStack.push(snapshotState());
+                applySnapshot(redoStack.pop());
+            }
+
+            // Spider handle types for selection
+            const SPIDER_HANDLE = {
+                START: 'start',
+                END: 'end',
+                OFFSET: 'offset'
+            };
+
+            // ========== SPIDER TOOL STATE ==========
+            let spiderToolState = 'idle';
+            let pendingSpider = null;
+            let selectedSpiderIndex = -1;
+            let draggingSpiderHandle = null; // Which handle is being dragged
+
+            // Camera
+            let camX = 0, camY = 0;
+            let zoom = 2;
+            const MIN_ZOOM = 0.5, MAX_ZOOM = 8;
+
+            // Canvas refs
+            const canvas = document.getElementById('editorCanvas');
+            const ctx = canvas.getContext('2d');
+            const container = document.getElementById('canvasContainer');
+
+            // ========== ALT TEXTURES (from assets.js) ==========
+            const B64_ASSETS = {
+                TEX_BALL_NORMAL: 'iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAAAXNSR0IArs4c6QAAATJJREFUKJFtkU1LAlEYhZ97Z3QcMTD7gHLTorUWrtpFtIui+hutWwb9FNcRtGgZFLgNiixaFYSYEI6JgzKO453bYtT8OrvDPee+7zmvYBZ6iou5ZHv/RN84z/8PdgwdKO6bHUquR7HuCgATQEpDXzlPE5/JlEVyJ8fBV4W9chVAF+uukADlXBZ/fBNTEl9LE24dIo/PEHaMy2yG4QT9qXoA5I1EZOiHeO81FjZu0S0XgKYKAbQJ8PbbY3fFnozaD2nfPaK9AIBFQ0arAoS+wFFqtq6BeBwSIJ+2KP10eVHdOS1HuG60RxmEo5VOKslr18dODEYbsEmcbwJWMTmvNgDEsEd9sZRh2TCoEBAoiBmQsgQFK8p29FGbMIxMp+spWl4IwIPfoWDZIzHTZx8ap/iE5g95EmwILFkHxwAAAABJRU5ErkJggg==',
+                TEX_BALL_INFLATED: 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAATJJREFUOI2tk09rwkAUxH9vN3+qeKpSKLl4ESqUfgK/ff0ERfDQi5dcShQKom3i7ushJiY1VUo7t33MzM6y84QOGGO1a+69k++zoHkQEQV4frhnGFhuTMn/8Mr64JgtUwVQ1dpImuL5NGGde54GUVcAXrY5w8gwW6a1iTTFd5El5CxlCwXKW+5qEwMwnyYAZ2LphUgvbM0qTqUxxljdqUKkpBQtsu4LdN+epRQQKTtVjLFqACZxSOYcmXMX4wM1bxKXyQzAantgsckZWXvVYGQti03Oans4GfwFAcB4EPDei8icI7HhRUHmHI+3EWMbnAxePwtG8fX41RMqDYDx3klfBHIhoX171zcmhJALfRG8d2UPZssUjiVpousbK06l+Z8qN004tuyHZSqTdS1TE79Z5y82IJnCqY812gAAAABJRU5ErkJggg==',
+                TEX_BLOCK: 'iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAIAAADZF8uwAAAAAXNSR0IArs4c6QAAAKtJREFUKJGFULsOgkAQnNtbRTCXEJPrr6HxCyyt+SY/jq+gsbmehOYKC8hicScSAzjVbHZm9qHqvHCGsAt2hh433hf9yUhJW43+mcilAv/UM19CW+HDoN0ZAF79iuLVg5yhuwWApluf23SfnaJi1kVbREsj+yCNpOIq3NIIAN3iIAI7Q5CvCYAPApOIM+SDaCtcHXWMsRPZiYbT5IOUmSozBaDMlKrzYutVM94NmDmy2K+XFAAAAABJRU5ErkJggg==',
+                TEX_TRAMPOLINE_BLOCK: 'iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAIAAADZF8uwAAAAAXNSR0IArs4c6QAAAFtJREFUKJFjNHQJPP+EAT9gOf+EgUM7koAiCPXj4UkGBgYGnr8MX5hxKoKqgJOogImAc1AUYTOAPJMoVwT1HYewFbLoj7fHICIQBnaT4HogDBZDGYbzV5fjtw4AiPkWLvT+KVIAAAAASUVORK5CYII',
+                TEX_PUMP: 'iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAAAXNSR0IArs4c6QAAAGtJREFUKJFjZEADHz40/md48JiB4f4jKH7MIDD5KyNMngldAyEwABoEBOoZUfhI7mdgYGBgwWZKvfwehvuPGRjuvaCFkwahhg8f3v1nYGBg2OL/GMK/xPYfvw1LRRkYGBgY3k2A8g//RZEGAFjNH6fVVUf/AAAAAElFTkSuQmCC',
+                TEX_VALVE: 'iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAAAXNSR0IArs4c6QAAAMlJREFUKJGVkj0SAUEQhb+eVSSCCQWqVrAHUFLuwAU4gsO4gKssJWdusIGAaKfEaMFapf2U8qKe7v7ezKsaAZQ/1AAIIZAygBWwveCX1dD0AT+/VIWIaBmaGheJPt/4rV9LwX16nll2dRF7ANe3becSe/4VUtWaGODVrQKUPOtaQET0k5tVQ2tAD9MhAGWq5FnXBD/ORvTPe/KsA6AuTnq0Tnt8Yd1ERI+zkbbWG3xBBXl/z7AriCF5GrQpx+nDKC4SdtEDIP9+jRvvx1bE7InHAgAAAABJRU5ErkJggg==',
+                TEX_CANDLE: 'iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAAAXNSR0IArs4c6QAAAIRJREFUKJGVj70NwkAMhb+LAClb3AiZlSlYgh1wTXNVUiFoEG6C6SLOPgXyume/HztRw8qQF5IvBSCxBhExVewuB2vtu1X3HzBVvhtCy87x9DrtjavBNNO635/kE0ODN/jE0OAHVoaMzMp5VACOt0elCQ3vZ78QL24ZfmLz0+GHRmil+QDE1jGpnIEpuQAAAABJRU5ErkJggg==',
+                TEX_GRAVITY_DEVICE: 'iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAAAXNSR0IArs4c6QAAAOVJREFUKJF9kT1uwkAQhb9ZLEvuLI6QM0RKQXooOQNCFG4oOEFOkLihtAgFNXfAHICGgsK5QUSHsom9KewJbMA8aaWd0Xtv/oQGn/PImZ7VkGobYnoW0pLqMaKbnIQ7cM27gqh7NznJy3J/RXofHyjsUJQTAJjn8o+wyr9vllROUDdwFuSDvUd8WkT1582eBS4FMA7g53X+z3tWzzTtQFZiAGQKx1HVuoHjSE2pBaQlcUbr2uIMES5mcHSgSXxtNj47nHlhAKBqgP5k5wsWH15otGTrABdtoYcDeAjXNy+rKOxQAH4BJUZHTHXl7rgAAAAASUVORK5CYII',
+                TEX_JUMP_BOOST_DEVICE: 'iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAAAXNSR0IArs4c6QAAAPhJREFUKJGVkK9OxEAQxn+7C6f7CmBOoWspT8CGF9icOF0LBi7oCiSoDSHnCDwBglCJaEjAUXiCnmbLDeJor6SFhC8ZMZPvz8wAUE2MLM6M8I2qGEk1+b1HayPbo9t2cP246PVarwSaf6IVbLotGpculFJydP4+oNRGxtNCAOmsJONpIT0jrY2k6UlL6BYgzqU/b6jrGgDnUoIvW6PgS5xLATj2T+sbTq9eWlIeZwRfEnxJHmdEUQTA/CEAsDH0iTzOerMmWQPM3M6frwR4qw/WCcvlpwLEWsvhzYrQrJIkCdbuNRxU4zC7fJby7mLQ/X6+y+vHvgL4Auo2dDBwodTWAAAAAElFTkSuQmCC',
+                TEX_SPEED_BOOST_DEVICE: 'iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABmZVhJZklJKgAIAAAAAQBphwQAAQAAABoAAAAAAAAAAwAAkAcABAAAADAyMzABoAMAAQAAAAEAAAAFoAQAAQAAAEQAAAAAAAAAAgABAAIABAAAAFI5OAACAAcABAAAADAxMDAAAAAAIvvHMbnUA7gAAABqSURBVChTY3h/lO0/GC9g/f++muU/AwMDCMPA//drWP+/b2f5/z6JGYwZKNbAxMRMmgaQoue2tmCMVQPUCXAMU4ysCQ0jALpiJE3YAbpCHBqY/jMyMoIxbichqSHZ09g0IFlPjAYm6moAAAzh+nxiIM3xAAAAAElFTkSuQmCC',
+                TEX_CRYSTAL: 'iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAAAXNSR0IArs4c6QAAAT9JREFUKJFlkTFIQlEYhb/3HlbDM2iIhh5RYgQhTjUJheKS0CpBES2CKYFT2BBIg1tBizgUhhBUY4INDYEgCAWBTZY0xHOpwcHXIGK3QXx49Ww/9/v/czhXYUihvagwZg3Mhknx6hZoKoPv9pA4vxDvry+EE0lUTQPgr9slW67zmYrz/VNT7IVAOid2Q34b7MOqprFp6BRMi5PINvVKSVEB2tXn4WRky3Vpnpn39CL5tmIikjyUrusdJ5ajJbkB5ItPqOPeVQnUO84RsO/2dZ9Ddf82bGDwqt5x2q6xtSUAJlx+FJgS+beqBA7LcrTsxlRoKplSzba3HC38C2LE9fhgn0o82GupcXMqZS6Y1kjExY0wDH7c5LRXLKfOiPrcUmOXmWvG5gwej3YUaaGvQDonPh7ucHnWaXtWqMSDEvMPD4140kSzlFwAAAAASUVORK5CYII',
+                TEX_CHECKPOINT: 'iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAAAXNSR0IArs4c6QAAAQVJREFUKJGFkb1Kw2AUhp/zNZQYf9qOboGuUgVvoIODq4vgDXkXnRxEEEXoDegi0sW4C9IL0EbFpGnT16E2tjXFd3y+88D7nQOlaQhQ2YtbBkmSKo7bDKIWZdKSEOiiEwJgYZP3pzrOVbRCCJQkr9x0rSBXdz6Dx03MrJAMYBC1ZGGTavWcLDspBL0846wPQG03RpI5CGRhE4BZHYCN9UtmHCCOajhXkXNuyPXZPcBCnWw0AqC+91GwySTnZ8JTmo7x/QZ5b39hDdlOd/rDYA1J5k3x2HzfU5q+8fkw/q3xlbM1THH9EEnG33g6OtxW3jtQfNvW6TErDzifQgD373Ahze9+Pt8W22txy8bJ0QAAAABJRU5ErkJggg==',
+                TEX_CHECKPOINT_COLLECTED: 'iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAAAXNSR0IArs4c6QAAAHZJREFUKJGlkcsNgDAMQ+12H2AVGBRYBfah5lA+/UGRsJRLGsevCvBXxlgBCKsqdbOvwxwvTBskb6dcTpAbsta7oaYr3xgryaGdYux1sAAA5zZGCaVhAGjGrZzg+anUtPSEpJskfJTEE+HECYefP0aK5KejVbUD+KQu1p5/ShEAAAAASUVORK5CYII',
+                TEX_DOOR: 'iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAIAAABvFaqvAAAAAXNSR0IArs4c6QAAA9lJREFUOI2tlc9PG0cUx78zO+uFuF7bLC0/je2N7EQpVPyqUkRoTFRFuYZjTj3lmD+qh/TeHFsJUgflh8BEgQPCjflhmh+OzdqmBtY7u5PDszat1COr1Wg+s/N98968N7Ps569NXMYjdrKLhR+XlpYWt7e2j7zmgNQvRq3lTK5YXG8bwYDUJ8ZHARwdvzsRnunypaXF1YNy37vGifAm9MTUzFSxuL72Z5FP7q9P57LKcaZmpkyXu74sxAeV49yavEE4NjExNjHh+tJ0+a3JG8pxCvFBwqmZKeU407ns5P46B7BZrgDY3Cj5UBrY64MqgNLbfcJq5bBaOdTAfKjS230Arw+qhJsbpVCuTUeN4Obi6nYpqhgTOgfrnDafvHwRNyKEn+ofTpyGJnQFXHTaT16+MCMixN/33vQnTX9znQOIuuzBwu14wgIgZVc3rszmrnOjXwMj1I0rUnY1MG70z+auEwKIJ6wHC7ejLgOgick7Kz8VYsOjo6Mj1aMq55oPxcEC6SnOBReUFBpX0qOO4IKD/bBw0/gqZhnit31Hu9utyfz3I/19x+9rzdO2lF3BhZRdISIK4GBSdoPA51xTQO8TF1J2Ode4r0yoncNj449fBIAPQWd1cwMA04QQER+KWiU9iIgQEXJKSc8XejhBym65slcGzs0+AByA6fKcnY8nLCb0np5qTER8qPD9j0UoJvR4wsrZedPlAASAzNj4d3MZx0mvFZ+FegDUamDUDwfDCXPzs8kkA1AnQ/VW6/SgUW2cKumFkyhl/4tUX1J2q5VDYcXqrVYvtEt5OIDBeDyWsVJ2mvYojCVEqmNC8o4wZadjGWswHu/t0cHfxwBqJw2yHYZAAhKHegqKCZ1O1TcDFskFgLYRlCt7X9Iv9H9bDJ0P9UzoZK7VbLSajS/pH+bR5bn5nJ2n6qBJGhjJpOzSgQj14cbn7Pzy3PwwjwLgO9nF/PgwSyZTdjrMPVkMqyn0K4yaRlJ2miWT+fHhneyidrdbc1LfWobY2S1fSC+QHp0vxTmtzLnWM8GF4pyD0blRnDc+1WNcbZYr5tqvHEDHUI+fP201G7S+556VyruBe04re+6Z556RI4F7XirvEgJoNRuPnz/tGKq3R1GXPSzco2sEQNIaenR/JcScnc/ZeerHE9aj+ytJayjEh4V7dI1wAHM5m+qdEjydSQGYvZolTNnplJ2mxM9ezQKYzqQI5+ZnQ7kmJu/0xcz0tfz21naNnceg/xVBdmTs2UapbQQx6FwFp61W559OM+J/fF9PX8uvfTzu67jNiO/W2kPZ9KutN6/ail3W7+gzICYYQlG+BIkAAAAASUVORK5CYII',
+                TEX_SPIDER: 'iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAAXNSR0IArs4c6QAAAghJREFUSIm1Vs1K41AU/u5tiEVpIeDCJ5gH0KEEZNwFcSPUrsJsdKOLmT7APEF3s+l0MbNyoRSENuBmEF2NFIrM9AF8AgUhYmmRQHNmcZvmprk3TUHP6pL7ne/83nPCsLZNiGTUY3gLkTgZ5wUCgDCc5CBfnSqOF2Ij3pm1+IOe3GmckdM4o9jQAvK1beJRWkQEVoai7HVWBBbNsjHqMSN56UtG/CXrodbjaaDPirWfyI4mTS900k4ZKvhr5xB26xIA6K6+q0ifRYDPOC9QpXkFAOh/2c/vD6aF4rxAxdoFiaIZUpGNxF1WgyhSJCQMJywMJyzwXJjVdurerLYReO4Ml8OAvvUCz0V38IRheQPD8ga6gycEnqsPX+Ji8gen8UsJv/52CACwf/wGAPS/7kHgTzX44+lpzAzZ2u1fU6lgfvgMe3cLK8NHAMBO/Tv6V/+0eDkSbQ3eSgzxKkUUnz4GStB15xx/7s/jFDVFypwjR4OPTokXry5y1IbdwTPZrRuyWzfUHTwvaM+YS0qRfr6Y1TYONtdRenlA6eUBB5vrytZVcWlrEHkY9fu8RO9j0UNTjgpglSrNSwCAelSUEIY+CzxXHhWUZ08AAIq1C1INu3hUzItFQictihRZ9No5WXJc+0zopJ2aS5GYkvmJk0ZUHDy5MrPI5TbOWpk+k1fmuy999t6/Lf8Bomb4hRUcYRcAAAAASUVORK5CYII',
+                TEX_SMALL_RING: 'iVBORw0KGgoAAAANSUhEUgAAAAwAAAAYCAYAAADOMhxqAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABmZVhJZklJKgAIAAAAAQBphwQAAQAAABoAAAAAAAAAAwAAkAcABAAAADAyMzABoAMAAQAAAAEAAAAFoAQAAQAAAEQAAAAAAAAAAgABAAIABAAAAFI5OAACAAcABAAAADAxMDAAAAAAIvvHMbnUA7gAAABcSURBVDhPY2AYEPC+muU/CKOLY4D31SxgxR/OMYMxVCO6MlQA1nBRD4wJ2oKsmChNMA0w/qgGbGBUAykakDFeDR8u6pGWvD+cY4ZoQMpA6GpQACx3gRQSVEwzAACNZN17lyWe2gAAAABJRU5ErkJggg==',
+                TEX_LARGE_RING: 'iVBORw0KGgoAAAANSUhEUgAAAAwAAAAYCAYAAADOMhxqAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABmZVhJZklJKgAIAAAAAQBphwQAAQAAABoAAAAAAAAAAwAAkAcABAAAADAyMzABoAMAAQAAAAEAAAAFoAQAAQAAAEQAAAAAAAAAAgABAAIABAAAAFI5OAACAAcABAAAADAxMDAAAAAAIvvHMbnUA7gAAABgSURBVDhPY2DAAt5Xs/wHYXRxrACk8MM5ZjAmShNYw0U9MCao4X01C4YGkBhegGwqMTaATYbxCTprVMOoBhyA9hpAAFkBQcUfLurBbSHKdNI1nGOGaCC2EIDlX5BCXIoBjyTy0pGY7fwAAAAASUVORK5CYII=',
+            };
+
+            // Loaded texture images
+            const loadedTextures = {};
+            let texturesLoaded = false;
+
+            // Load all textures
+            function loadTextures() {
+                const promises = Object.entries(B64_ASSETS).map(([key, b64]) => {
+                    return new Promise(resolve => {
+                        const img = new Image();
+                        img.onload = () => {
+                            loadedTextures[key] = img;
+                            resolve();
+                        };
+                        img.src = 'data:image/png;base64,' + b64;
+                    });
+                });
+                Promise.all(promises).then(() => {
+                    generateProceduralTextures();
+                    texturesLoaded = true;
+                });
+            }
+
+            function generateProceduralTextures() {
+                if (!loadedTextures.TEX_BLOCK) return;
+
+                // Generate Slope (ID 30 base)
+                const slopeCanvas = document.createElement('canvas');
+                slopeCanvas.width = 12;
+                slopeCanvas.height = 12;
+                const sCtx = slopeCanvas.getContext('2d');
+                sCtx.drawImage(loadedTextures.TEX_BLOCK, 0, 0);
+                const sData = sCtx.getImageData(0, 0, 12, 12);
+                for (let y = 0; y < 12; y++) {
+                    for (let x = 0; x < 12; x++) {
+                        // Mask: 1 is solid, 0 is transparent
+                        // The mask f needs to be applied such that 0 clears the pixel
+                        // Original f has 1 for solid (bottom-right triangle) called "f" in index.html
+                        // We need to clear where f[y][x] is 0
+                        if (!f[y][x]) {
+                            const idx = (y * 12 + x) * 4;
+                            sData.data[idx + 3] = 0; // Alpha 0
+                        }
+                    }
+                }
+                sCtx.putImageData(sData, 0, 0);
+
+                const slopeImg = new Image();
+                slopeImg.src = slopeCanvas.toDataURL();
+                loadedTextures.TEX_SLOPE = slopeImg;
+
+                // Generate Trampoline Slope (ID 34 base)
+                if (loadedTextures.TEX_TRAMPOLINE_BLOCK) {
+                    const tsCanvas = document.createElement('canvas');
+                    tsCanvas.width = 12;
+                    tsCanvas.height = 12;
+                    const tsCtx = tsCanvas.getContext('2d');
+                    tsCtx.drawImage(loadedTextures.TEX_TRAMPOLINE_BLOCK, 0, 0);
+                    const tsData = tsCtx.getImageData(0, 0, 12, 12);
+                    for (let y = 0; y < 12; y++) {
+                        for (let x = 0; x < 12; x++) {
+                            if (!f[y][x]) {
+                                const idx = (y * 12 + x) * 4;
+                                tsData.data[idx + 3] = 0;
+                            }
+                        }
+                    }
+                    tsCtx.putImageData(tsData, 0, 0);
+                    const tsImg = new Image();
+                    tsImg.src = tsCanvas.toDataURL();
+                    loadedTextures.TEX_TSLOPE = tsImg;
+                }
+            }
+
+            // ========== CUSTOM DROPDOWN ==========
+            function getSpawnSizeValue() {
+                const dropdown = document.getElementById('spawnSizeDropdown');
+                return parseInt(dropdown.querySelector('.custom-dropdown-selected').dataset.value) || 12;
+            }
+
+            function setSpawnSizeValue(val) {
+                const dropdown = document.getElementById('spawnSizeDropdown');
+                const selected = dropdown.querySelector('.custom-dropdown-selected');
+                const options = dropdown.querySelectorAll('.custom-dropdown-option');
+                options.forEach(opt => {
+                    opt.classList.remove('selected');
+                    if (parseInt(opt.dataset.value) === val) {
+                        opt.classList.add('selected');
+                        selected.textContent = opt.textContent;
+                        selected.dataset.value = val;
+                    }
+                });
+            }
+
+            function setupCustomDropdown() {
+                const dropdown = document.getElementById('spawnSizeDropdown');
+                const selected = dropdown.querySelector('.custom-dropdown-selected');
+                const options = dropdown.querySelectorAll('.custom-dropdown-option');
+
+                selected.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    dropdown.classList.toggle('open');
+                });
+
+                options.forEach(opt => {
+                    opt.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const val = opt.dataset.value;
+                        selected.textContent = opt.textContent;
+                        selected.dataset.value = val;
+                        options.forEach(o => o.classList.remove('selected'));
+                        opt.classList.add('selected');
+                        dropdown.classList.remove('open');
+                        markUnsavedChanges(); // Track spawn size changes
+                    });
+                });
+
+                // Close dropdown when clicking outside
+                document.addEventListener('click', () => {
+                    dropdown.classList.remove('open');
+                });
+
+                // Track spawn point coordinate changes
+                document.getElementById('spawnCol').addEventListener('input', markUnsavedChanges);
+                document.getElementById('spawnRow').addEventListener('input', markUnsavedChanges);
+
+                // Track door position changes
+                document.getElementById('doorCol').addEventListener('input', markUnsavedChanges);
+                document.getElementById('doorRow').addEventListener('input', markUnsavedChanges);
+            }
+
+            // ========== INIT ==========
+            async function init() {
+                loadTextures();
+                resizeCanvas();
+                setupLevelInput();
+                buildPalette();
+                setupEventListeners();
+                setupModeToggle();
+                setupCustomDropdown();
+                centerCamera();
+
+                // Initialize IndexedDB and check for auto-saved work
+                await BounceStorage.init();
+                await checkAutoSave();
+                startAutoSave();
+
+                // Check if user is logged in (for upload functionality)
+                await validateEditorSession();
+
+                render();
+            }
+
+            function resizeCanvas() {
+                canvas.width = container.clientWidth;
+                canvas.height = container.clientHeight;
+                ctx.imageSmoothingEnabled = false;
+            }
+
+            // Setup mode toggle buttons
+            function setupModeToggle() {
+                const buildBtn = document.getElementById('buildModeBtn');
+                const selectBtn = document.getElementById('selectModeBtn');
+                const modeIndicator = document.getElementById('modeIndicator');
+                const selectionInfo = document.getElementById('selectionInfo');
+
+                buildBtn.addEventListener('click', () => setEditorMode('build'));
+                selectBtn.addEventListener('click', () => setEditorMode('select'));
+            }
+
+            function setEditorMode(mode) {
+                editorMode = mode;
+                const buildBtn = document.getElementById('buildModeBtn');
+                const selectBtn = document.getElementById('selectModeBtn');
+                const modeIndicator = document.getElementById('modeIndicator');
+                const selectionInfo = document.getElementById('selectionInfo');
+
+                if (mode === 'build') {
+                    buildBtn.classList.add('active');
+                    selectBtn.classList.remove('active');
+                    selectBtn.classList.remove('select-mode');
+                    modeIndicator.textContent = 'Build Mode';
+                    modeIndicator.className = 'canvas-overlay mode-indicator build-mode';
+                    selectionInfo.classList.remove('visible');
+                    finalizeTileMovement(); // Finalize any pending tile movement
+                    selectedObject = null;
+                    canvas.style.cursor = 'crosshair';
+                } else {
+                    selectBtn.classList.add('active', 'select-mode');
+                    buildBtn.classList.remove('active');
+                    modeIndicator.textContent = 'Select Mode';
+                    modeIndicator.className = 'canvas-overlay mode-indicator select-mode';
+                    selectionInfo.classList.add('visible');
+                    canvas.style.cursor = 'pointer';
+                    // Reset spider tool state when entering select mode
+                    spiderToolState = 'idle';
+                    pendingSpider = null;
+                }
+
+                updateSelectionInfo();
+            }
+
+            // Update selection info panel
+            function updateSelectionInfo() {
+                const details = document.getElementById('selectionDetails');
+                if (!selectedObject) {
+                    details.innerHTML = '<p style="font-size:11px;color:var(--text-dim);">Click an object to select it</p>';
+                    return;
+                }
+
+                let html = '';
+                if (selectedObject.type === 'spider') {
+                    const spider = spiders[selectedObject.spiderIndex];
+                    html = `
+                    <p style="font-size:11px;color:var(--text);margin-bottom:6px;"><strong>Spider #${selectedObject.spiderIndex + 1}</strong></p>
+                    <p style="font-size:10px;color:var(--text-dim);">Start: (${spider.startCol}, ${spider.startRow})</p>
+                    <p style="font-size:10px;color:var(--text-dim);">End: (${spider.endCol}, ${spider.endRow})</p>
+                    <p style="font-size:10px;color:var(--text-dim);">Offset: ${spider.offset}px</p>
+                    <p style="font-size:9px;color:var(--text-muted);margin-top:8px;">Drag handles to edit</p>
+                    <button class="btn btn-small" style="margin-top:8px;background:var(--danger);border-color:var(--danger);" onclick="deleteSelectedSpider()">Delete Spider</button>
+                `;
+                } else if (selectedObject.type === 'tile') {
+                    const tileId = tiles[selectedObject.row * levelWidth + selectedObject.col] & ~WATER_FLAG;
+                    const tileDef = getTileDefById(tileId);
+                    html = `
+                    <p style="font-size:11px;color:var(--text);margin-bottom:6px;"><strong>${tileDef?.name || 'Tile'}</strong></p>
+                    <p style="font-size:10px;color:var(--text-dim);">Position: (${selectedObject.col}, ${selectedObject.row})</p>
+                    <p style="font-size:10px;color:var(--text-dim);">ID: ${tileId}</p>
+                `;
+                } else if (selectedObject.type === 'spawn') {
+                    html = `
+                    <p style="font-size:11px;color:var(--text);margin-bottom:6px;"><strong>Spawn Point</strong></p>
+                    <p style="font-size:10px;color:var(--text-dim);">Position: (${spawnCol}, ${spawnRow})</p>
+                `;
+                } else if (selectedObject.type === 'door') {
+                    html = `
+                    <p style="font-size:11px;color:var(--text);margin-bottom:6px;"><strong>Door</strong></p>
+                    <p style="font-size:10px;color:var(--text-dim);">Position: (${doorCol}, ${doorRow})</p>
+                `;
+                }
+                details.innerHTML = html;
+            }
+
+            function getTileDefById(id) {
+                for (const category of Object.values(TILE_DEFS)) {
+                    for (const tile of category) {
+                        if (tile.id === id) return tile;
+                        if (tile.rotations && tile.rotations.includes(id)) return tile;
+                    }
+                }
+                return null;
+            }
+
+            function deleteSelectedSpider() {
+                if (selectedObject && selectedObject.type === 'spider') {
+                    pushUndo();
+                    spiders.splice(selectedObject.spiderIndex, 1);
+                    markUnsavedChanges();
+                    selectedObject = null;
+                    updateSelectionInfo();
+                }
+            }
+
+            // Setup level input field
+            function setupLevelInput() {
+                const input = document.getElementById('levelInput');
+                input.value = currentLevel;
+                updateHeightDisplay();
+                input.addEventListener('input', () => {
+                    let val = parseInt(input.value) || 1;
+                    val = Math.max(1, Math.min(MAX_LEVEL, val));
+                    currentLevel = val;
+                    updateHeightDisplay();
+                });
+            }
+
+            function updateHeightDisplay() {
+                const height = calculateHeight(currentLevel);
+                document.getElementById('levelHeightDisplay').textContent = `${height} cells`;
+            }
+
+            // Center the camera so level is in the middle of the viewport
+            function centerCamera() {
+                const levelPixelWidth = levelWidth * 12;
+                const levelPixelHeight = levelHeight * 12;
+                const viewportWidth = canvas.width / zoom;
+                const viewportHeight = canvas.height / zoom;
+                camX = (levelPixelWidth - viewportWidth) / 2;
+                camY = (levelPixelHeight - viewportHeight) / 2;
+            }
+
+            // function initBorders() { ... } // Removed
+
+            // ========== PALETTE ==========
+            // ========== PALETTE ==========
+            function buildPalette() {
+                Object.entries(TILE_DEFS).forEach(([category, tiles]) => {
+                    const container = document.getElementById('tiles' + category.charAt(0).toUpperCase() + category.slice(1));
+                    if (!container) return;
+
+                    container.innerHTML = '';
+                    tiles.forEach(tileDef => {
+                        const btn = document.createElement('div');
+                        btn.className = 'tile-btn';
+                        btn.title = tileDef.name;
+                        btn.dataset.id = tileDef.id;
+
+                        // Add texture icon canvas
+                        const iconCanvas = document.createElement('canvas');
+                        iconCanvas.width = 24;
+                        iconCanvas.height = 24;
+                        iconCanvas.style.imageRendering = 'pixelated';
+                        btn.appendChild(iconCanvas);
+
+                        // Draw texture icon when textures are loaded
+                        const drawIcon = () => {
+                            const iconCtx = iconCanvas.getContext('2d');
+                            iconCtx.imageSmoothingEnabled = false;
+                            iconCtx.clearRect(0, 0, 24, 24);
+
+                            const tex = getTileTexture(tileDef.id);
+                            if (tex) {
+                                // Handle multi-tile textures (door, rings)
+                                if (tileDef.multiTile === 'door') {
+                                    iconCtx.drawImage(loadedTextures.TEX_DOOR, 0, 0, 24, 24);
+                                } else if (tileDef.multiTile === 'vring' || tileDef.multiTile === 'bigvring') {
+                                    // Draw centered horizontally
+                                    iconCtx.drawImage(tex, 0, 0, 12, 24, 6, 0, 12, 24);
+                                } else if (tileDef.multiTile === 'hring' || tileDef.multiTile === 'bighring') {
+                                    // Rotate 90 degrees to make it horizontal
+                                    iconCtx.save();
+                                    iconCtx.translate(12, 12);
+                                    iconCtx.rotate(Math.PI / 2);
+                                    // Draw centered in rotated space
+                                    iconCtx.drawImage(tex, 0, 0, 12, 24, -6, -12, 12, 24);
+                                    iconCtx.restore();
+                                } else {
+                                    iconCtx.drawImage(tex, 0, 0, 24, 24);
+                                }
+                            } else if (tileDef.isSpawn) {
+                                // Draw ball for spawn
+                                const ballTex = loadedTextures.TEX_BALL_NORMAL;
+                                if (ballTex) iconCtx.drawImage(ballTex, 6, 6, 12, 12);
+                            } else if (tileDef.isSpider) {
+                                // Draw spider texture
+                                const spiderTex = loadedTextures.TEX_SPIDER;
+                                if (spiderTex) iconCtx.drawImage(spiderTex, 0, 0, 24, 24);
+                            } else if (tileDef.id === 64) {
+                                // Water - draw blue overlay
+                                iconCtx.fillStyle = '#106090';
+                                iconCtx.fillRect(0, 0, 24, 24);
+                                iconCtx.fillStyle = 'rgba(255,255,255,0.3)';
+                                iconCtx.fillRect(4, 8, 16, 2);
+                                iconCtx.fillRect(2, 14, 20, 2);
+                            }
+                        };
+
+                        // Retry drawing icons until textures are loaded
+                        const tryDrawIcon = () => {
+                            if (texturesLoaded) {
+                                drawIcon();
+                            } else {
+                                setTimeout(tryDrawIcon, 100);
+                            }
+                        };
+                        tryDrawIcon();
+
+                        btn.addEventListener('click', () => {
+                            document.querySelectorAll('.tile-btn').forEach(b => b.classList.remove('selected'));
+                            btn.classList.add('selected');
+                            selectedTile = tileDef;
+                            currentRotation = 0;
+                            // Activate spider tool when spider is selected
+                            if (tileDef.isSpider) {
+                                spiderToolState = 'placingStart';
+                                pendingSpider = null;
+                                selectedSpiderIndex = -1;
+                                canvas.style.cursor = 'crosshair';
+                            } else {
+                                spiderToolState = 'idle';
+                                pendingSpider = null;
+                            }
+                        });
+
+                        container.appendChild(btn);
+                    });
+                });
+
+                // Select first block by default
+                document.querySelector('.tile-btn[data-id="1"]')?.classList.add('selected');
+            }
+
+            // ========== RENDERING ==========
+            function render() {
+                ctx.fillStyle = '#050508';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                const tileSize = 12 * zoom;
+                const startCol = Math.floor(camX / 12);
+                const startRow = Math.floor(camY / 12);
+                const endCol = Math.min(levelWidth, startCol + Math.ceil(canvas.width / tileSize) + 2);
+                const endRow = Math.min(levelHeight, startRow + Math.ceil(canvas.height / tileSize) + 2);
+
+                // Update selection animation
+                selectionAnimTime += 0.016; // ~60fps
+                selectionHue = (selectionHue + 2) % 360;
+
+                // Draw tiles
+                for (let r = Math.max(0, startRow); r < endRow; r++) {
+                    for (let c = Math.max(0, startCol); c < endCol; c++) {
+                        const screenX = (c * 12 - camX) * zoom;
+                        const screenY = (r * 12 - camY) * zoom;
+
+                        const tileValue = tiles[r * levelWidth + c];
+                        const hasWater = (tileValue & WATER_FLAG) !== 0;
+                        const tileId = tileValue & ~WATER_FLAG;
+
+                        // Alt mode background: #B0E0F0 sky, #1060B0 water
+                        ctx.fillStyle = hasWater ? '#1060B0' : '#B0E0F0';
+                        ctx.fillRect(screenX, screenY, tileSize, tileSize);
+
+                        // Tile - draw texture if available
+                        // Check if this tile is selected
+                        const isSelectedTile = selectedObject && selectedObject.type === 'tile' &&
+                            selectedObject.col === c && selectedObject.row === r;
+
+                        if (tileId !== 0 && texturesLoaded) {
+                            const tex = getTileTexture(tileId);
+                            if (tex) {
+                                const rotation = getTileRotation(tileId);
+
+                                // Check for ring IDs to handle cropping
+                                let srcY = 0;
+                                let isRing = false;
+
+                                // Vertical Rings
+                                if (tileId === 13 || tileId === 21) { isRing = true; srcY = 0; } // Top
+                                if (tileId === 14 || tileId === 22) { isRing = true; srcY = 12; } // Bottom
+
+                                // Horizontal Rings (Rotated 90 deg)
+                                if (tileId === 15 || tileId === 23) { isRing = true; srcY = 12; }
+                                if (tileId === 16 || tileId === 24) { isRing = true; srcY = 0; }
+
+                                // For selected tiles, use hue-tinted rendering
+                                if (isSelectedTile) {
+                                    if (rotation !== 0 || isRing) {
+                                        ctx.save();
+                                        ctx.translate(screenX + tileSize / 2, screenY + tileSize / 2);
+                                        ctx.rotate(rotation);
+                                        if (isRing) {
+                                            // For rings, we need a temporary canvas to crop first
+                                            const ringCanvas = document.createElement('canvas');
+                                            ringCanvas.width = 12;
+                                            ringCanvas.height = 12;
+                                            const ringCtx = ringCanvas.getContext('2d');
+                                            ringCtx.drawImage(tex, 0, srcY, 12, 12, 0, 0, 12, 12);
+                                            drawHueTintedTexture(ringCanvas, -tileSize / 2, -tileSize / 2, tileSize, tileSize);
+                                        } else {
+                                            drawHueTintedTexture(tex, -tileSize / 2, -tileSize / 2, tileSize, tileSize);
+                                        }
+                                        ctx.restore();
+                                    } else {
+                                        if (isRing) {
+                                            const ringCanvas = document.createElement('canvas');
+                                            ringCanvas.width = 12;
+                                            ringCanvas.height = 12;
+                                            const ringCtx = ringCanvas.getContext('2d');
+                                            ringCtx.drawImage(tex, 0, srcY, 12, 12, 0, 0, 12, 12);
+                                            drawHueTintedTexture(ringCanvas, screenX, screenY, tileSize, tileSize);
+                                        } else {
+                                            drawHueTintedTexture(tex, screenX, screenY, tileSize, tileSize);
+                                        }
+                                    }
+                                } else {
+                                    // Normal rendering
+                                    if (rotation !== 0 || isRing) {
+                                        ctx.save();
+                                        ctx.translate(screenX + tileSize / 2, screenY + tileSize / 2);
+                                        ctx.rotate(rotation);
+                                        if (isRing) {
+                                            ctx.drawImage(tex, 0, srcY, 12, 12, -tileSize / 2, -tileSize / 2, tileSize, tileSize);
+                                        } else {
+                                            ctx.drawImage(tex, -tileSize / 2, -tileSize / 2, tileSize, tileSize);
+                                        }
+                                        ctx.restore();
+                                    } else {
+                                        if (isRing) {
+                                            ctx.drawImage(tex, 0, srcY, 12, 12, screenX, screenY, tileSize, tileSize);
+                                        } else {
+                                            ctx.drawImage(tex, screenX, screenY, tileSize, tileSize);
+                                        }
+                                    }
+                                }
+                                // Draw hollow block indicator (dashed border)
+                                if (tileId === 56) {
+                                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+                                    ctx.setLineDash([2, 2]);
+                                    ctx.lineWidth = 1;
+                                    ctx.strokeRect(screenX + 1, screenY + 1, tileSize - 2, tileSize - 2);
+                                    ctx.setLineDash([]);
+                                }
+                            } else {
+                                ctx.fillStyle = getTileColor(tileId);
+                                ctx.fillRect(screenX + 1, screenY + 1, tileSize - 2, tileSize - 2);
+                                if (isSelectedTile) {
+                                    drawSelectionHighlight(screenX, screenY, tileSize, tileSize);
+                                }
+                            }
+                        } else if (tileId !== 0) {
+                            ctx.fillStyle = getTileColor(tileId);
+                            ctx.fillRect(screenX + 1, screenY + 1, tileSize - 2, tileSize - 2);
+                            if (isSelectedTile) {
+                                drawSelectionHighlight(screenX, screenY, tileSize, tileSize);
+                            }
+                        }
+                    }
+                }
+
+                // Draw grid lines separately
+                drawGrid(startCol, startRow, endCol, endRow, tileSize);
+
+                // Draw spawn point with ball texture
+                const spawnScreenX = (spawnCol * 12 - camX) * zoom;
+                const spawnScreenY = (spawnRow * 12 - camY) * zoom;
+                const currentSpawnSize = getSpawnSizeValue();
+                const isSpawnSelected = selectedObject && selectedObject.type === 'spawn';
+
+                // Draw ball at spawn (with hue tint if selected)
+                const ballTex = currentSpawnSize === 16 ? loadedTextures.TEX_BALL_INFLATED : loadedTextures.TEX_BALL_NORMAL;
+                const ballDrawSize = currentSpawnSize * zoom;
+                const ballOffsetX = spawnScreenX + (tileSize - ballDrawSize) / 2;
+                const ballOffsetY = spawnScreenY + (tileSize - ballDrawSize) / 2;
+
+                if (ballTex && ballTex.complete) {
+                    if (isSpawnSelected) {
+                        drawHueTintedTexture(ballTex, ballOffsetX, ballOffsetY, ballDrawSize, ballDrawSize);
+                    } else {
+                        ctx.drawImage(ballTex, ballOffsetX, ballOffsetY, ballDrawSize, ballDrawSize);
+                    }
+                } else {
+                    ctx.fillStyle = currentSpawnSize === 16 ? 'rgba(255,100,100,0.9)' : 'rgba(255,50,50,0.9)';
+                    ctx.beginPath();
+                    ctx.arc(spawnScreenX + tileSize / 2, spawnScreenY + tileSize / 2, ballDrawSize / 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                ctx.fillStyle = '#000000';
+                ctx.font = `bold ${Math.max(10, 4 * zoom)}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top';
+                ctx.lineWidth = 1;
+
+                // Draw door
+                const doorScreenX = (doorCol * 12 - camX) * zoom;
+                const doorScreenY = (doorRow * 12 - camY) * zoom;
+                const isDoorSelected = selectedObject && selectedObject.type === 'door';
+
+                // Draw door with hue tint if selected
+                if (loadedTextures.TEX_DOOR) {
+                    if (isDoorSelected) {
+                        drawHueTintedTexture(loadedTextures.TEX_DOOR, doorScreenX, doorScreenY, tileSize * 2, tileSize * 2);
+                    } else {
+                        ctx.drawImage(loadedTextures.TEX_DOOR, doorScreenX, doorScreenY, tileSize * 2, tileSize * 2);
+                    }
+                } else {
+                    ctx.fillStyle = 'rgba(255,170,0,0.3)';
+                    ctx.fillRect(doorScreenX, doorScreenY, tileSize * 2, tileSize * 2);
+                }
+
+                if (!isDoorSelected) {
+                    ctx.strokeStyle = '#ffaa00';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(doorScreenX, doorScreenY, tileSize * 2, tileSize * 2);
+                    ctx.lineWidth = 1;
+                }
+
+                // Draw spiders with enhanced selection visualization
+                spiders.forEach((spider, i) => {
+                    const isSelected = selectedObject && selectedObject.type === 'spider' && selectedObject.spiderIndex === i;
+                    drawSpider(spider, i, isSelected, tileSize);
+                });
+
+                // Draw pending spider during creation
+                if (pendingSpider) {
+                    drawPendingSpider(tileSize);
+                }
+
+                // Draw level boundary outline
+                ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+                ctx.lineWidth = 2;
+                const boundX = -camX * zoom;
+                const boundY = -camY * zoom;
+                const boundW = levelWidth * 12 * zoom;
+                const boundH = levelHeight * 12 * zoom;
+                ctx.strokeRect(boundX, boundY, boundW, boundH);
+                ctx.lineWidth = 1;
+
+                // Draw cursor hologram preview (only in build mode)
+                if (editorMode === 'build') {
+                    drawCursorPreview(tileSize);
+                }
+
+                requestAnimationFrame(render);
+            }
+
+            // Draw RGB cycling selection highlight (outline only, for non-textured objects)
+            function drawSelectionHighlight(x, y, width, height) {
+                const hslColor = `hsl(${selectionHue}, 100%, 60%)`;
+                const glowColor = `hsla(${selectionHue}, 100%, 60%, 0.4)`;
+
+                // Outer glow
+                ctx.shadowColor = hslColor;
+                ctx.shadowBlur = 15 * zoom;
+                ctx.strokeStyle = hslColor;
+                ctx.lineWidth = 3;
+                ctx.strokeRect(x - 2, y - 2, width + 4, height + 4);
+                ctx.shadowBlur = 0;
+
+                // Inner highlight
+                ctx.strokeStyle = glowColor;
+                ctx.lineWidth = 2;
+                ctx.strokeRect(x, y, width, height);
+                ctx.lineWidth = 1;
+            }
+
+            // Draw a texture with RGB hue rotation applied (excluding transparent pixels)
+            function drawHueTintedTexture(texture, x, y, width, height) {
+                if (!texture) return;
+
+                // Create offscreen canvas for the hue effect
+                const offCanvas = document.createElement('canvas');
+                offCanvas.width = texture.width;
+                offCanvas.height = texture.height;
+                const offCtx = offCanvas.getContext('2d');
+
+                // Draw original texture
+                offCtx.drawImage(texture, 0, 0);
+
+                // Get image data
+                const imageData = offCtx.getImageData(0, 0, offCanvas.width, offCanvas.height);
+                const data = imageData.data;
+
+                // Convert hue to RGB multiplier
+                const hue = selectionHue / 360;
+
+                for (let i = 0; i < data.length; i += 4) {
+                    const a = data[i + 3];
+                    if (a === 0) continue; // Skip transparent pixels
+
+                    const r = data[i];
+                    const g = data[i + 1];
+                    const b = data[i + 2];
+
+                    // Convert RGB to HSL
+                    const max = Math.max(r, g, b) / 255;
+                    const min = Math.min(r, g, b) / 255;
+                    const l = (max + min) / 2;
+
+                    let s = 0;
+                    if (max !== min) {
+                        s = l > 0.5 ? (max - min) / (2 - max - min) : (max - min) / (max + min);
+                    }
+
+                    // Apply new hue while keeping saturation boosted and lightness
+                    const newS = Math.min(1, s + 0.5); // Boost saturation
+                    const newL = l;
+                    const newH = hue;
+
+                    // Convert back to RGB
+                    let newR, newG, newB;
+                    if (newS === 0) {
+                        newR = newG = newB = newL * 255;
+                    } else {
+                        const hue2rgb = (p, q, t) => {
+                            if (t < 0) t += 1;
+                            if (t > 1) t -= 1;
+                            if (t < 1 / 6) return p + (q - p) * 6 * t;
+                            if (t < 1 / 2) return q;
+                            if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+                            return p;
+                        };
+                        const q = newL < 0.5 ? newL * (1 + newS) : newL + newS - newL * newS;
+                        const p = 2 * newL - q;
+                        newR = hue2rgb(p, q, newH + 1 / 3) * 255;
+                        newG = hue2rgb(p, q, newH) * 255;
+                        newB = hue2rgb(p, q, newH - 1 / 3) * 255;
+                    }
+
+                    // Blend with original (50% tint)
+                    data[i] = Math.round(r * 0.4 + newR * 0.6);
+                    data[i + 1] = Math.round(g * 0.4 + newG * 0.6);
+                    data[i + 2] = Math.round(b * 0.4 + newB * 0.6);
+                }
+
+                offCtx.putImageData(imageData, 0, 0);
+
+                // Draw glow effect
+                const hslColor = `hsl(${selectionHue}, 100%, 60%)`;
+                ctx.shadowColor = hslColor;
+                ctx.shadowBlur = 12 * zoom;
+
+                // Draw the tinted texture
+                ctx.drawImage(offCanvas, x, y, width, height);
+
+                ctx.shadowBlur = 0;
+            }
+
+            // Draw spider with handles
+            // Spider is 2x2 tiles (24x24 pixels), anchor at CENTER
+            function drawSpider(spider, index, isSelected, tileSize) {
+                // Start and end positions are the CENTER of the spider's trajectory anchors
+                const startCenterX = spider.startCol * 12 + 12; // Center of 2x2
+                const startCenterY = spider.startRow * 12 + 12;
+                const endCenterX = spider.endCol * 12 + 12;
+                const endCenterY = spider.endRow * 12 + 12;
+
+                // Screen coordinates for centers
+                const sxCenter = (startCenterX - camX) * zoom;
+                const syCenter = (startCenterY - camY) * zoom;
+                const exCenter = (endCenterX - camX) * zoom;
+                const eyCenter = (endCenterY - camY) * zoom;
+
+                const dx = exCenter - sxCenter;
+                const dy = eyCenter - syCenter;
+
+                // Calculate trajectory length in world pixels
+                const trajLengthWorld = Math.sqrt(
+                    Math.pow(endCenterX - startCenterX, 2) +
+                    Math.pow(endCenterY - startCenterY, 2)
+                );
+                const offset = spider.offset || 0;
+                const t = trajLengthWorld > 0 ? offset / trajLengthWorld : 0;
+
+                // Spider CENTER position based on offset
+                const spCenterX = sxCenter + dx * t;
+                const spCenterY = syCenter + dy * t;
+
+                // Spider top-left for drawing (offset by half the size)
+                const spX = spCenterX - tileSize;
+                const spY = spCenterY - tileSize;
+
+                // Trajectory line (connects centers)
+                ctx.strokeStyle = isSelected ? `hsl(${selectionHue}, 100%, 60%)` : 'rgba(255, 0, 255, 0.6)';
+                ctx.lineWidth = isSelected ? 3 : 2;
+                ctx.setLineDash([6, 4]);
+                ctx.beginPath();
+                ctx.moveTo(sxCenter, syCenter);
+                ctx.lineTo(exCenter, eyCenter);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Draw spider texture
+                if (isSelected && loadedTextures.TEX_SPIDER) {
+                    drawHueTintedTexture(loadedTextures.TEX_SPIDER, spX, spY, tileSize * 2, tileSize * 2);
+                } else if (loadedTextures.TEX_SPIDER) {
+                    ctx.drawImage(loadedTextures.TEX_SPIDER, spX, spY, tileSize * 2, tileSize * 2);
+                } else {
+                    ctx.fillStyle = '#ff00ff';
+                    ctx.fillRect(spX, spY, tileSize * 2, tileSize * 2);
+                }
+
+                // Draw handles when selected
+                if (isSelected && editorMode === 'select') {
+                    const handleSize = Math.max(8, 10 * zoom);
+
+                    // Start handle at center (green)
+                    drawHandle(sxCenter, syCenter, handleSize, '#00ff00', 'START');
+
+                    // End handle at center (red)
+                    drawHandle(exCenter, eyCenter, handleSize, '#ff0000', 'END');
+
+                    // Offset handle at spider center (yellow)
+                    drawHandle(spCenterX, spCenterY, handleSize, '#ffff00', 'OFFSET');
+                } else {
+                    // Simple markers when not in select mode
+                    ctx.fillStyle = '#00ff00';
+                    ctx.beginPath();
+                    ctx.arc(sxCenter, syCenter, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#ff0000';
+                    ctx.beginPath();
+                    ctx.arc(exCenter, eyCenter, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                ctx.lineWidth = 1;
+            }
+
+            // Draw a draggable handle
+            function drawHandle(x, y, size, color, label) {
+                const halfSize = size / 2;
+
+                // Handle background
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.arc(x, y, halfSize, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Handle border
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(x, y, halfSize, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Label
+                ctx.fillStyle = '#ffffff';
+                ctx.font = `bold ${Math.max(8, 9 * zoom)}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                const labelChar = label === 'START' ? 'S' : label === 'END' ? 'E' : 'O';
+                ctx.fillText(labelChar, x, y);
+            }
+
+            // Draw pending spider during creation (using centered coordinates)
+            function drawPendingSpider(tileSize) {
+                // Center coordinates for start
+                const startCenterX = pendingSpider.startCol * 12 + 12;
+                const startCenterY = pendingSpider.startRow * 12 + 12;
+                const pxCenter = (startCenterX - camX) * zoom;
+                const pyCenter = (startCenterY - camY) * zoom;
+
+                // Start point marker at center
+                ctx.fillStyle = '#00ff00';
+                ctx.beginPath();
+                ctx.arc(pxCenter, pyCenter, 6, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                if (pendingSpider.endCol !== undefined) {
+                    // Center coordinates for end
+                    const endCenterX = pendingSpider.endCol * 12 + 12;
+                    const endCenterY = pendingSpider.endRow * 12 + 12;
+                    const exCenter = (endCenterX - camX) * zoom;
+                    const eyCenter = (endCenterY - camY) * zoom;
+
+                    // End point marker at center
+                    ctx.fillStyle = '#ff0000';
+                    ctx.beginPath();
+                    ctx.arc(exCenter, eyCenter, 6, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    // Trajectory line between centers
+                    ctx.strokeStyle = '#ffff00';
+                    ctx.setLineDash([4, 4]);
+                    ctx.beginPath();
+                    ctx.moveTo(pxCenter, pyCenter);
+                    ctx.lineTo(exCenter, eyCenter);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+
+                    // Spider preview at offset position (centered)
+                    const trajLengthWorld = Math.sqrt(
+                        Math.pow(endCenterX - startCenterX, 2) +
+                        Math.pow(endCenterY - startCenterY, 2)
+                    );
+                    const offset = pendingSpider.offset || 0;
+                    const t = trajLengthWorld > 0 ? offset / trajLengthWorld : 0;
+                    const dx = exCenter - pxCenter;
+                    const dy = eyCenter - pyCenter;
+                    // Spider CENTER position
+                    const spCenterX = pxCenter + dx * t;
+                    const spCenterY = pyCenter + dy * t;
+                    // Spider top-left for drawing
+                    const spX = spCenterX - tileSize;
+                    const spY = spCenterY - tileSize;
+
+                    if (loadedTextures.TEX_SPIDER) {
+                        ctx.globalAlpha = 0.7;
+                        ctx.drawImage(loadedTextures.TEX_SPIDER, spX, spY, tileSize * 2, tileSize * 2);
+                        ctx.globalAlpha = 1;
+                    } else {
+                        ctx.fillStyle = 'rgba(255,0,255,0.7)';
+                        ctx.fillRect(spX, spY, tileSize * 2, tileSize * 2);
+                    }
+                }
+            }
+
+            // Draw cursor preview hologram
+            function drawCursorPreview(tileSize) {
+                const hideHologram = spiderToolState === 'settingOffset' || draggingSpiderHandle;
+                if (hoverCol < 0 || hoverCol >= levelWidth || hoverRow < 0 || hoverRow >= levelHeight || isPanning || hideHologram) {
+                    return;
+                }
+
+                // Determine object size for centered snapping
+                const is2x2 = selectedTile.isSpider || selectedTile.multiTile === 'door';
+                const isVRing = selectedTile.multiTile === 'vring' || selectedTile.multiTile === 'bigvring'; // 1 wide, 2 tall
+                const isHRing = selectedTile.multiTile === 'hring' || selectedTile.multiTile === 'bighring'; // 2 wide, 1 tall
+
+                let previewCol, previewRow;
+
+                if (is2x2) {
+                    // 2x2: center on grid intersection
+                    previewCol = Math.round(hoverWorldX / 12) - 1;
+                    previewRow = Math.round(hoverWorldY / 12) - 1;
+                } else if (isVRing) {
+                    // 1x2 vertical: center vertically only
+                    previewCol = hoverCol;
+                    previewRow = Math.round(hoverWorldY / 12) - 1;
+                } else if (isHRing) {
+                    // 2x1 horizontal: center horizontally only
+                    previewCol = Math.round(hoverWorldX / 12) - 1;
+                    previewRow = hoverRow;
+                } else {
+                    previewCol = hoverCol;
+                    previewRow = hoverRow;
+                }
+
+                const hoverScreenX = (previewCol * 12 - camX) * zoom;
+                const hoverScreenY = (previewRow * 12 - camY) * zoom;
+
+                ctx.globalAlpha = 0.5;
+
+                let previewId = selectedTile.id;
+                if (selectedTile.rotatable && selectedTile.rotations) {
+                    previewId = selectedTile.rotations[currentRotation];
+                }
+
+                const previewTex = getTileTexture(previewId);
+
+                if (selectedTile.isSpider) {
+                    if (loadedTextures.TEX_SPIDER) {
+                        ctx.drawImage(loadedTextures.TEX_SPIDER, hoverScreenX, hoverScreenY, tileSize * 2, tileSize * 2);
+                    } else {
+                        ctx.fillStyle = '#ff00ff';
+                        ctx.fillRect(hoverScreenX, hoverScreenY, tileSize * 2, tileSize * 2);
+                    }
+                } else if (selectedTile.isSpawn) {
+                    const spawnSizeVal = getSpawnSizeValue();
+                    const ballTex = spawnSizeVal === 16 ? loadedTextures.TEX_BALL_INFLATED : loadedTextures.TEX_BALL_NORMAL;
+                    if (ballTex) {
+                        const ballSize = spawnSizeVal * zoom;
+                        ctx.drawImage(ballTex, hoverScreenX + (tileSize - ballSize) / 2, hoverScreenY + (tileSize - ballSize) / 2, ballSize, ballSize);
+                    }
+                } else if (selectedTile.multiTile === 'door') {
+                    if (loadedTextures.TEX_DOOR) {
+                        ctx.drawImage(loadedTextures.TEX_DOOR, hoverScreenX, hoverScreenY, tileSize * 2, tileSize * 2);
+                    } else {
+                        ctx.fillStyle = '#ffaa00';
+                        ctx.fillRect(hoverScreenX, hoverScreenY, tileSize * 2, tileSize * 2);
+                    }
+                } else if (selectedTile.multiTile === 'vring' || selectedTile.multiTile === 'bigvring') {
+                    const ringTex = selectedTile.multiTile === 'vring' ? loadedTextures.TEX_SMALL_RING : loadedTextures.TEX_LARGE_RING;
+                    if (ringTex) {
+                        ctx.drawImage(ringTex, hoverScreenX, hoverScreenY, tileSize, tileSize * 2);
+                    }
+                } else if (selectedTile.multiTile === 'hring' || selectedTile.multiTile === 'bighring') {
+                    const ringTex = selectedTile.multiTile === 'hring' ? loadedTextures.TEX_SMALL_RING : loadedTextures.TEX_LARGE_RING;
+                    if (ringTex) {
+                        ctx.save();
+                        ctx.translate(hoverScreenX + tileSize, hoverScreenY + tileSize / 2);
+                        ctx.rotate(Math.PI / 2);
+                        ctx.drawImage(ringTex, -tileSize / 2, -tileSize, tileSize, tileSize * 2);
+                        ctx.restore();
+                    }
+                } else if (selectedTile.isFlag) {
+                    ctx.fillStyle = 'rgba(16,96,144,0.6)';
+                    ctx.fillRect(hoverScreenX, hoverScreenY, tileSize, tileSize);
+                } else if (previewTex) {
+                    const rotation = getTileRotation(previewId);
+                    if (rotation !== 0) {
+                        ctx.save();
+                        ctx.translate(hoverScreenX + tileSize / 2, hoverScreenY + tileSize / 2);
+                        ctx.rotate(rotation);
+                        ctx.drawImage(previewTex, -tileSize / 2, -tileSize / 2, tileSize, tileSize);
+                        ctx.restore();
+                    } else {
+                        ctx.drawImage(previewTex, hoverScreenX, hoverScreenY, tileSize, tileSize);
+                    }
+                } else if (previewId > 0) {
+                    ctx.fillStyle = selectedTile.color || '#888';
+                    ctx.fillRect(hoverScreenX + 2, hoverScreenY + 2, tileSize - 4, tileSize - 4);
+                }
+
+                ctx.globalAlpha = 1;
+
+                // Draw hover cell outline
+                ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+                ctx.lineWidth = 2;
+                if (is2x2) {
+                    ctx.strokeRect(hoverScreenX, hoverScreenY, tileSize * 2, tileSize * 2);
+                } else if (isVRing) {
+                    ctx.strokeRect(hoverScreenX, hoverScreenY, tileSize, tileSize * 2);
+                } else if (isHRing) {
+                    ctx.strokeRect(hoverScreenX, hoverScreenY, tileSize * 2, tileSize);
+                } else {
+                    ctx.strokeRect(hoverScreenX, hoverScreenY, tileSize, tileSize);
+                }
+                ctx.lineWidth = 1;
+            }
+
+            function getTileColor(id) {
+                for (const category of Object.values(TILE_DEFS)) {
+                    for (const tile of category) {
+                        if (tile.id === id) return tile.color;
+                        if (tile.rotations && tile.rotations.includes(id)) return tile.color;
+                        if (tile.ids && tile.ids.includes(id)) return tile.color;
+                    }
+                }
+                return '#888';
+            }
+
+            function getTileTexture(id) {
+                if (!texturesLoaded) return null;
+                if (id === 1) return loadedTextures.TEX_BLOCK;
+                if (id === 56) return loadedTextures.TEX_BLOCK; // Hollow block uses same texture as block
+                if (id === 2) return loadedTextures.TEX_TRAMPOLINE_BLOCK;
+                if (id >= 3 && id <= 6) return loadedTextures.TEX_CANDLE;
+                if (id === 7) return loadedTextures.TEX_CHECKPOINT;
+                if (id === 8) return loadedTextures.TEX_CHECKPOINT_COLLECTED;
+                if (id === 9 || id === 10 || id === 11 || id === 12) return loadedTextures.TEX_DOOR;
+                if (id === 13 || id === 14) return loadedTextures.TEX_SMALL_RING; // V-Ring
+                if (id === 15 || id === 16) return loadedTextures.TEX_SMALL_RING; // H-Ring (rotated)
+                if (id === 21 || id === 22) return loadedTextures.TEX_LARGE_RING; // Big V-Ring
+                if (id === 23 || id === 24) return loadedTextures.TEX_LARGE_RING; // Big H-Ring (rotated)
+                if (id >= 30 && id <= 33) return loadedTextures.TEX_SLOPE;
+                if (id >= 34 && id <= 37) return loadedTextures.TEX_TSLOPE;
+                if (id === 38) return loadedTextures.TEX_SPEED_BOOST_DEVICE;
+                if (id >= 39 && id <= 42) return loadedTextures.TEX_VALVE;
+                if (id >= 43 && id <= 46) return loadedTextures.TEX_PUMP;
+                if (id >= 47 && id <= 50) return loadedTextures.TEX_GRAVITY_DEVICE;
+                if (id >= 51 && id <= 54) return loadedTextures.TEX_JUMP_BOOST_DEVICE;
+                if (id === 55) return loadedTextures.TEX_CRYSTAL;
+                return null;
+            }
+
+            // Get rotation angle for a tile ID (in radians)
+            function getTileRotation(id) {
+                // Rotatable tiles: candle (3-6), pump (43-46), valve (39-42), gravity (47-50), jump (51-54)
+                // Rotation index: 0=up, 1=right, 2=down, 3=left
+                const rotationGroups = [
+                    [3, 4, 5, 6],       // Candle
+                    [39, 40, 41, 42],   // Valve
+                    [43, 44, 45, 46],   // Pump
+                    [47, 48, 49, 50],   // Gravity
+                    [51, 52, 53, 54],   // Jump boost
+                ];
+                for (const group of rotationGroups) {
+                    const idx = group.indexOf(id);
+                    if (idx !== -1) return idx * Math.PI / 2;
+                }
+                // Slopes have special rotation mapping to match engine:
+                // Engine: ID 30 = top-left solid, 31 = top-right, 32 = bottom-right (base), 33 = bottom-left
+                // Editor base texture = bottom-right solid (like ID 32)
+                // So: 30 = 180°, 31 = 270°, 32 = 0°, 33 = 90°
+                const slopeRotation = { 30: 2, 31: 3, 32: 0, 33: 1, 34: 2, 35: 3, 36: 0, 37: 1 };
+                if (slopeRotation[id] !== undefined) return slopeRotation[id] * Math.PI / 2;
+                // H-Rings are rotated 90 degrees from V-Rings
+                if (id === 15 || id === 16 || id === 23 || id === 24) return Math.PI / 2;
+                return 0;
+            }
+
+            function drawGrid(startCol, startRow, endCol, endRow, tileSize) {
+                // Use fillRect instead of stroke for crisp nearest-neighbor style lines
+                // Strokes are always anti-aliased in canvas 2D, but fillRect is not
+                ctx.fillStyle = 'rgba(0,80,120,0.5)';
+
+                // Calculate level bounds in screen space
+                const levelMinX = Math.round(-camX * zoom);
+                const levelMinY = Math.round(-camY * zoom);
+                const levelMaxX = Math.round((levelWidth * 12 - camX) * zoom);
+                const levelMaxY = Math.round((levelHeight * 12 - camY) * zoom);
+
+                // Draw vertical lines using 1px filled rectangles
+                for (let c = Math.max(0, startCol); c <= Math.min(levelWidth, endCol); c++) {
+                    const screenX = Math.round((c * 12 - camX) * zoom);
+                    ctx.fillRect(screenX, levelMinY, 1, levelMaxY - levelMinY);
+                }
+
+                // Draw horizontal lines using 1px filled rectangles
+                for (let r = Math.max(0, startRow); r <= Math.min(levelHeight, endRow); r++) {
+                    const screenY = Math.round((r * 12 - camY) * zoom);
+                    ctx.fillRect(levelMinX, screenY, levelMaxX - levelMinX, 1);
+                }
+            }
+
+            // Clear any existing door tiles (ID 9, 10, 11, 12) from the map
+            function clearOldDoorTiles() {
+                for (let i = 0; i < tiles.length; i++) {
+                    const tileId = tiles[i] & ~WATER_FLAG;
+                    if (tileId >= 9 && tileId <= 12) {
+                        tiles[i] = tiles[i] & WATER_FLAG; // Keep water flag, clear tile to 0
+                    }
+                }
+            }
+
+            // ========== INPUT ==========
+            let isPanning = false, isDrawing = false, isErasing = false;
+            let lastMouseX = 0, lastMouseY = 0;
+            let hoverCol = -1, hoverRow = -1;
+            let hoverWorldX = 0, hoverWorldY = 0; // Track actual world position for centered placement preview
+
+            function setupEventListeners() {
+                // Mouse
+                canvas.addEventListener('mousedown', onMouseDown);
+                canvas.addEventListener('mousemove', onMouseMove);
+                canvas.addEventListener('mouseup', onMouseUp);
+                canvas.addEventListener('wheel', onWheel);
+                canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+                // Keyboard
+                window.addEventListener('keydown', onKeyDown);
+
+                // Resize
+                window.addEventListener('resize', resizeCanvas);
+
+                // Sidebar collapse
+                document.querySelectorAll('.sidebar-header').forEach(header => {
+                    header.addEventListener('click', () => {
+                        header.parentElement.classList.toggle('collapsed');
+                    });
+                });
+
+                // Buttons
+                document.getElementById('btnNew').addEventListener('click', newLevel);
+                document.getElementById('btnSave').addEventListener('click', openSaveModal);
+                document.getElementById('btnLoad').addEventListener('click', openLoadModal);
+                document.getElementById('btnResize').addEventListener('click', resizeLevel);
+                document.getElementById('btnPlaceDoor').addEventListener('click', placeDoor);
+            }
+
+            function onMouseDown(e) {
+                const rect = canvas.getBoundingClientRect();
+                const worldX = (e.clientX - rect.left) / zoom + camX;
+                const worldY = (e.clientY - rect.top) / zoom + camY;
+                const col = Math.floor(worldX / 12);
+                const row = Math.floor(worldY / 12);
+
+                if (e.button === 1) {
+                    isPanning = true;
+                    lastMouseX = e.clientX;
+                    lastMouseY = e.clientY;
+                    canvas.style.cursor = 'grabbing';
+                    return;
+                }
+
+                // Select Mode handling
+                if (editorMode === 'select') {
+                    if (e.button === 0) {
+                        handleSelectModeClick(worldX, worldY, col, row);
+                    } else if (e.button === 2) {
+                        // Right click deselects
+                        selectedObject = null;
+                        updateSelectionInfo();
+                    }
+                    return;
+                }
+
+                // Build Mode handling
+                if (e.button === 0) {
+                    // Handle spider tool states
+                    if (selectedTile.isSpider) {
+                        // For 2x2 objects, snap to grid intersection (centered placement)
+                        // The center of the 2x2 should align with where 4 cells meet
+                        const centeredCol = Math.round(worldX / 12) - 1;
+                        const centeredRow = Math.round(worldY / 12) - 1;
+
+                        if (spiderToolState === 'placingStart') {
+                            pendingSpider = { startCol: centeredCol, startRow: centeredRow };
+                            spiderToolState = 'placingEnd';
+                        } else if (spiderToolState === 'placingEnd') {
+                            // Prevent zero-length trajectory (end same as start)
+                            if (centeredCol === pendingSpider.startCol && centeredRow === pendingSpider.startRow) {
+                                return; // Don't allow placing end at same position as start
+                            }
+                            pendingSpider.endCol = centeredCol;
+                            pendingSpider.endRow = centeredRow;
+                            pendingSpider.offset = 0;
+                            spiderToolState = 'settingOffset';
+                            draggingSpiderHandle = 'offset';
+                        } else if (spiderToolState === 'settingOffset') {
+                            pushUndo();
+                            spiders.push({
+                                startCol: pendingSpider.startCol,
+                                startRow: pendingSpider.startRow,
+                                endCol: pendingSpider.endCol,
+                                endRow: pendingSpider.endRow,
+                                offset: pendingSpider.offset,
+                                speed: 2
+                            });
+                            markUnsavedChanges();
+                            pendingSpider = null;
+                            spiderToolState = 'placingStart';
+                            draggingSpiderHandle = null;
+                        }
+                        return;
+                    }
+
+                    isDrawing = true;
+                    pushUndo();
+                    placeTileAt(e);
+                } else if (e.button === 2) {
+                    // Right click: cancel spider placement or erase
+                    if (spiderToolState !== 'idle' && spiderToolState !== 'placingStart') {
+                        spiderToolState = 'placingStart';
+                        pendingSpider = null;
+                        return;
+                    }
+                    isErasing = true;
+                    pushUndo();
+                    eraseTileAt(e);
+                }
+            }
+
+            // Handle click in select mode
+            function handleSelectModeClick(worldX, worldY, col, row) {
+                const tileSize = 12;
+
+                // Check if clicking on a spider handle first
+                if (selectedObject && selectedObject.type === 'spider') {
+                    const spider = spiders[selectedObject.spiderIndex];
+                    const handle = getSpiderHandleAt(spider, worldX, worldY);
+                    if (handle) {
+                        pushUndo();
+                        draggingSpiderHandle = handle;
+                        return;
+                    }
+                }
+
+                // Check spiders
+                for (let i = spiders.length - 1; i >= 0; i--) {
+                    const spider = spiders[i];
+
+                    // Check handles when spider is selected
+                    if (selectedObject && selectedObject.type === 'spider' && selectedObject.spiderIndex === i) {
+                        const handle = getSpiderHandleAt(spider, worldX, worldY);
+                        if (handle) {
+                            draggingSpiderHandle = handle;
+                            return;
+                        }
+                    }
+
+                    // Check spider body (using centered coordinates)
+                    const startCenterX = spider.startCol * 12 + 12;
+                    const startCenterY = spider.startRow * 12 + 12;
+                    const endCenterX = spider.endCol * 12 + 12;
+                    const endCenterY = spider.endRow * 12 + 12;
+
+                    const trajLengthWorld = Math.sqrt(
+                        Math.pow(endCenterX - startCenterX, 2) +
+                        Math.pow(endCenterY - startCenterY, 2)
+                    );
+                    const offset = spider.offset || 0;
+                    const t = trajLengthWorld > 0 ? offset / trajLengthWorld : 0;
+
+                    // Spider CENTER position
+                    const spCenterX = startCenterX + (endCenterX - startCenterX) * t;
+                    const spCenterY = startCenterY + (endCenterY - startCenterY) * t;
+
+                    // Check if click is within spider bounds (24x24 centered on spCenterX/Y)
+                    if (worldX >= spCenterX - 12 && worldX < spCenterX + 12 &&
+                        worldY >= spCenterY - 12 && worldY < spCenterY + 12) {
+                        selectedObject = { type: 'spider', spiderIndex: i };
+                        updateSelectionInfo();
+                        return;
+                    }
+                }
+
+                // Check door (2x2)
+                if (worldX >= doorCol * 12 && worldX < (doorCol + 2) * 12 &&
+                    worldY >= doorRow * 12 && worldY < (doorRow + 2) * 12) {
+                    selectedObject = { type: 'door', col: doorCol, row: doorRow };
+                    updateSelectionInfo();
+                    return;
+                }
+
+                // Check spawn
+                if (col === spawnCol && row === spawnRow) {
+                    selectedObject = { type: 'spawn', col: spawnCol, row: spawnRow };
+                    updateSelectionInfo();
+                    return;
+                }
+
+                // Check tile
+                if (col >= 0 && col < levelWidth && row >= 0 && row < levelHeight) {
+                    const tileIdx = row * levelWidth + col;
+                    const tileId = tiles[tileIdx] & ~WATER_FLAG;
+                    if (tileId !== 0) {
+                        // Finalize any previous tile movement first
+                        finalizeTileMovement();
+
+                        selectedObject = { type: 'tile', col: col, row: row };
+
+                        // Initialize non-destructive movement tracking
+                        movingTileOriginalIdx = tileIdx;
+                        movingTileValue = tiles[tileIdx];
+                        movingTileCurrentIdx = tileIdx;
+                        movingTileUnderValue = 0;  // Nothing under at original position
+
+                        updateSelectionInfo();
+                        return;
+                    }
+                }
+
+
+                // Clicked empty space
+                finalizeTileMovement(); // Finalize any pending tile movement
+                selectedObject = null;
+                updateSelectionInfo();
+            }
+
+
+            // Get which spider handle is at the given world position
+            // All handles are at the CENTER of their respective positions
+            // OFFSET is checked FIRST so it can be grabbed even when overlapping start/end
+            function getSpiderHandleAt(spider, worldX, worldY) {
+                const handleRadius = 10;
+
+                // Calculate all positions first
+                const startCenterX = spider.startCol * 12 + 12;
+                const startCenterY = spider.startRow * 12 + 12;
+                const endCenterX = spider.endCol * 12 + 12;
+                const endCenterY = spider.endRow * 12 + 12;
+
+                // Calculate offset handle position
+                const trajLengthWorld = Math.sqrt(
+                    Math.pow(endCenterX - startCenterX, 2) +
+                    Math.pow(endCenterY - startCenterY, 2)
+                );
+                const offset = spider.offset || 0;
+                const t = trajLengthWorld > 0 ? offset / trajLengthWorld : 0;
+                const spiderCenterX = startCenterX + (endCenterX - startCenterX) * t;
+                const spiderCenterY = startCenterY + (endCenterY - startCenterY) * t;
+
+                // Check OFFSET handle FIRST - gives it priority when overlapping with start/end
+                if (Math.hypot(worldX - spiderCenterX, worldY - spiderCenterY) < handleRadius) {
+                    return SPIDER_HANDLE.OFFSET;
+                }
+
+                // Then check start handle
+                if (Math.hypot(worldX - startCenterX, worldY - startCenterY) < handleRadius) {
+                    return SPIDER_HANDLE.START;
+                }
+
+                // Then check end handle
+                if (Math.hypot(worldX - endCenterX, worldY - endCenterY) < handleRadius) {
+                    return SPIDER_HANDLE.END;
+                }
+
+                return null;
+            }
+
+            function onMouseMove(e) {
+                const rect = canvas.getBoundingClientRect();
+                const worldX = (e.clientX - rect.left) / zoom + camX;
+                const worldY = (e.clientY - rect.top) / zoom + camY;
+                const col = Math.floor(worldX / 12);
+                const row = Math.floor(worldY / 12);
+
+                hoverCol = col;
+                hoverRow = row;
+                hoverWorldX = worldX;
+                hoverWorldY = worldY;
+
+                document.getElementById('coordsIndicator').textContent = `${col}, ${row}`;
+
+                if (isPanning) {
+                    const dx = e.clientX - lastMouseX;
+                    const dy = e.clientY - lastMouseY;
+                    camX -= dx / zoom;
+                    camY -= dy / zoom;
+                    clampCamera();
+                    lastMouseX = e.clientX;
+                    lastMouseY = e.clientY;
+                    hoverCol = -1;
+                    hoverRow = -1;
+                } else if (editorMode === 'select' && draggingSpiderHandle && selectedObject && selectedObject.type === 'spider') {
+                    // Dragging spider handle - use centered grid for start/end (2x2 objects)
+                    const spider = spiders[selectedObject.spiderIndex];
+                    const centeredCol = Math.round(worldX / 12) - 1;
+                    const centeredRow = Math.round(worldY / 12) - 1;
+
+                    if (draggingSpiderHandle === SPIDER_HANDLE.START) {
+                        // Prevent zero-length trajectory
+                        if (centeredCol === spider.endCol && centeredRow === spider.endRow) {
+                            return; // Don't allow moving start to same position as end
+                        }
+                        // Calculate old trajectory length and offset ratio
+                        const oldLength = Math.sqrt(
+                            Math.pow((spider.endCol - spider.startCol) * 12, 2) +
+                            Math.pow((spider.endRow - spider.startRow) * 12, 2)
+                        );
+                        const offsetRatio = oldLength > 0 ? (spider.offset || 0) / oldLength : 0;
+
+                        // Update position
+                        spider.startCol = centeredCol;
+                        spider.startRow = centeredRow;
+
+                        // Recalculate offset to maintain same relative position
+                        const newLength = Math.sqrt(
+                            Math.pow((spider.endCol - spider.startCol) * 12, 2) +
+                            Math.pow((spider.endRow - spider.startRow) * 12, 2)
+                        );
+                        spider.offset = Math.round(offsetRatio * newLength);
+                    } else if (draggingSpiderHandle === SPIDER_HANDLE.END) {
+                        // Prevent zero-length trajectory
+                        if (centeredCol === spider.startCol && centeredRow === spider.startRow) {
+                            return; // Don't allow moving end to same position as start
+                        }
+                        // Calculate old trajectory length and offset ratio
+                        const oldLength = Math.sqrt(
+                            Math.pow((spider.endCol - spider.startCol) * 12, 2) +
+                            Math.pow((spider.endRow - spider.startRow) * 12, 2)
+                        );
+                        const offsetRatio = oldLength > 0 ? (spider.offset || 0) / oldLength : 0;
+
+                        // Update position
+                        spider.endCol = centeredCol;
+                        spider.endRow = centeredRow;
+
+                        // Recalculate offset to maintain same relative position
+                        const newLength = Math.sqrt(
+                            Math.pow((spider.endCol - spider.startCol) * 12, 2) +
+                            Math.pow((spider.endRow - spider.startRow) * 12, 2)
+                        );
+                        spider.offset = Math.round(offsetRatio * newLength);
+                    } else if (draggingSpiderHandle === SPIDER_HANDLE.OFFSET) {
+                        // Calculate offset using center points
+                        spider.offset = calculateOffsetAlongLine(
+                            spider.startCol * 12 + 12, spider.startRow * 12 + 12,
+                            spider.endCol * 12 + 12, spider.endRow * 12 + 12,
+                            worldX, worldY
+                        );
+                    }
+                    updateSelectionInfo();
+                } else if (spiderToolState === 'settingOffset' && pendingSpider) {
+                    // Use center coordinates for offset calculation
+                    pendingSpider.offset = calculateOffsetAlongLine(
+                        pendingSpider.startCol * 12 + 12, pendingSpider.startRow * 12 + 12,
+                        pendingSpider.endCol * 12 + 12, pendingSpider.endRow * 12 + 12,
+                        worldX, worldY
+                    );
+                } else if (isDrawing) {
+                    placeTileAt(e);
+                } else if (isErasing) {
+                    eraseTileAt(e);
+                }
+            }
+
+            // Calculate offset in PIXELS along a line segment
+            function calculateOffsetAlongLine(x1, y1, x2, y2, mouseX, mouseY) {
+                const dx = x2 - x1;
+                const dy = y2 - y1;
+                const length = Math.sqrt(dx * dx + dy * dy);
+                if (length === 0) return 0;
+
+                const t = ((mouseX - x1) * dx + (mouseY - y1) * dy) / (length * length);
+                const clampedT = Math.max(0, Math.min(1, t));
+                return Math.round(clampedT * length);
+            }
+
+            function onMouseUp(e) {
+                isPanning = false;
+                isDrawing = false;
+                isErasing = false;
+                draggingSpiderHandle = null;
+
+                if (editorMode === 'build') {
+                    canvas.style.cursor = 'crosshair';
+                } else {
+                    canvas.style.cursor = 'pointer';
+                }
+            }
+
+            function onWheel(e) {
+                e.preventDefault();
+                const rect = canvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+
+                const worldX = mouseX / zoom + camX;
+                const worldY = mouseY / zoom + camY;
+
+                if (e.deltaY < 0) {
+                    zoom = Math.min(MAX_ZOOM, zoom * 1.2);
+                } else {
+                    zoom = Math.max(MIN_ZOOM, zoom / 1.2);
+                }
+
+                camX = worldX - mouseX / zoom;
+                camY = worldY - mouseY / zoom;
+                clampCamera();
+
+                document.getElementById('zoomIndicator').textContent = zoom.toFixed(1) + '×';
+            }
+
+            function onKeyDown(e) {
+                // Ignore keyboard controls when typing in input fields
+                const activeEl = document.activeElement;
+                const isTyping = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT');
+                if (isTyping && e.key !== 'Escape') {
+                    return; // Allow Escape to blur inputs, but don't process other keys
+                }
+
+                // Undo / Redo
+                if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'z') {
+                    e.preventDefault();
+                    undo();
+                    return;
+                }
+                if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) {
+                    e.preventDefault();
+                    redo();
+                    return;
+                }
+
+                // Mode switching
+                if (e.key === 'b' || e.key === 'B') {
+                    setEditorMode('build');
+                    return;
+                }
+                if (e.key === 'v' || e.key === 'V') {
+                    setEditorMode('select');
+                    return;
+                }
+
+                // Escape to deselect
+                if (e.key === 'Escape') {
+                    finalizeTileMovement(); // Finalize any pending tile movement
+                    selectedObject = null;
+                    updateSelectionInfo();
+                    // Also cancel spider placement
+                    if (spiderToolState !== 'idle') {
+                        spiderToolState = 'placingStart';
+                        pendingSpider = null;
+                    }
+                    return;
+                }
+
+
+                // Select mode controls
+                if (editorMode === 'select' && selectedObject) {
+                    // WASD movement
+                    const moveAmount = e.shiftKey ? 5 : 1;
+                    let moved = false;
+
+                    if (e.key === 'w' || e.key === 'W') {
+                        if (!e.repeat) pushUndo();
+                        moveSelectedObject(0, -moveAmount);
+                        moved = true;
+                    } else if (e.key === 's' || e.key === 'S') {
+                        if (!e.repeat) pushUndo();
+                        moveSelectedObject(0, moveAmount);
+                        moved = true;
+                    } else if (e.key === 'a' || e.key === 'A') {
+                        if (!e.repeat) pushUndo();
+                        moveSelectedObject(-moveAmount, 0);
+                        moved = true;
+                    } else if (e.key === 'd' || e.key === 'D') {
+                        if (!e.repeat) pushUndo();
+                        moveSelectedObject(moveAmount, 0);
+                        moved = true;
+                    }
+
+                    // Q/E rotation
+                    if (e.key === 'q' || e.key === 'Q') {
+                        if (!e.repeat) pushUndo();
+                        rotateSelectedObject(-1);
+                        moved = true;
+                    } else if (e.key === 'e' || e.key === 'E') {
+                        if (!e.repeat) pushUndo();
+                        rotateSelectedObject(1);
+                        moved = true;
+                    }
+
+                    // Delete key
+                    if (e.key === 'Delete' || e.key === 'Backspace') {
+                        pushUndo();
+                        deleteSelectedObject();
+                        moved = true;
+                    }
+
+                    if (moved) {
+                        e.preventDefault();
+                        updateSelectionInfo();
+                        return;
+                    }
+                }
+
+                // Build mode rotation
+                if (e.key === 'r' || e.key === 'R') {
+                    if (editorMode === 'build') {
+                        rotateSelectedTileOrHovered();
+                    }
+                }
+            }
+
+            // Finalize tile movement - called when deselecting or switching tiles
+            // Clears the original position if the tile moved, and resets tracking state
+            function finalizeTileMovement() {
+                if (movingTileOriginalIdx === -1) return; // No tile being moved
+
+                // If tile moved to a different position, clear original (it's no longer there)
+                if (movingTileCurrentIdx !== movingTileOriginalIdx) {
+                    // Original position should be empty (the tile moved away)
+                    tiles[movingTileOriginalIdx] = 0;
+                }
+
+                // Reset tracking state
+                movingTileOriginalIdx = -1;
+                movingTileValue = 0;
+                movingTileUnderValue = 0;
+                movingTileCurrentIdx = -1;
+            }
+
+            // Move selected object by delta cells
+
+            function moveSelectedObject(dx, dy) {
+                if (!selectedObject) return;
+
+                if (selectedObject.type === 'tile') {
+                    const newCol = Math.max(0, Math.min(levelWidth - 1, selectedObject.col + dx));
+                    const newRow = Math.max(0, Math.min(levelHeight - 1, selectedObject.row + dy));
+                    const newIdx = newRow * levelWidth + newCol;
+
+                    if (newIdx !== movingTileCurrentIdx) {
+                        // Restore what was under the previous position
+                        tiles[movingTileCurrentIdx] = movingTileUnderValue;
+
+                        // Save what's at the new position (before overwriting)
+                        movingTileUnderValue = tiles[newIdx];
+
+                        // Write the moving tile at the new position
+                        tiles[newIdx] = movingTileValue;
+
+                        // Update tracking
+                        movingTileCurrentIdx = newIdx;
+                        selectedObject.col = newCol;
+                        selectedObject.row = newRow;
+
+                        markUnsavedChanges();
+                    }
+                } else if (selectedObject.type === 'spawn') {
+
+                    spawnCol = Math.max(0, Math.min(levelWidth - 1, spawnCol + dx));
+                    spawnRow = Math.max(0, Math.min(levelHeight - 1, spawnRow + dy));
+                    document.getElementById('spawnCol').value = spawnCol;
+                    document.getElementById('spawnRow').value = spawnRow;
+                    selectedObject.col = spawnCol;
+                    selectedObject.row = spawnRow;
+                } else if (selectedObject.type === 'door') {
+                    clearOldDoorTiles();
+                    doorCol = Math.max(0, Math.min(levelWidth - 2, doorCol + dx));
+                    doorRow = Math.max(0, Math.min(levelHeight - 2, doorRow + dy));
+                    document.getElementById('doorCol').value = doorCol;
+                    document.getElementById('doorRow').value = doorRow;
+                    // Place door tiles at new position
+                    for (let dr = 0; dr < 2; dr++) {
+                        for (let dc = 0; dc < 2; dc++) {
+                            tiles[(doorRow + dr) * levelWidth + doorCol + dc] = 9;
+                        }
+                    }
+                    selectedObject.col = doorCol;
+                    selectedObject.row = doorRow;
+                } else if (selectedObject.type === 'spider') {
+                    const spider = spiders[selectedObject.spiderIndex];
+                    spider.startCol += dx;
+                    spider.startRow += dy;
+                    spider.endCol += dx;
+                    spider.endRow += dy;
+                }
+            }
+
+            // Rotate selected object
+            function rotateSelectedObject(direction) {
+                if (!selectedObject) return;
+
+                if (selectedObject.type === 'tile') {
+                    const idx = selectedObject.row * levelWidth + selectedObject.col;
+                    const currentTileVal = tiles[idx];
+                    const currentTileId = currentTileVal & ~WATER_FLAG;
+
+                    for (const category of Object.values(TILE_DEFS)) {
+                        for (const tile of category) {
+                            if (tile.rotatable && tile.rotations) {
+                                const rotIdx = tile.rotations.indexOf(currentTileId);
+                                if (rotIdx !== -1) {
+                                    const nextIdx = (rotIdx + direction + tile.rotations.length) % tile.rotations.length;
+                                    const water = currentTileVal & WATER_FLAG;
+                                    tiles[idx] = tile.rotations[nextIdx] | water;
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Delete selected object
+            function deleteSelectedObject() {
+                if (!selectedObject) return;
+
+                if (selectedObject.type === 'tile') {
+                    const idx = selectedObject.row * levelWidth + selectedObject.col;
+                    tiles[idx] = 0;
+                    markUnsavedChanges();
+                    selectedObject = null;
+                } else if (selectedObject.type === 'spider') {
+                    spiders.splice(selectedObject.spiderIndex, 1);
+                    markUnsavedChanges();
+                    selectedObject = null;
+                }
+            }
+
+            // Rotate in build mode
+            function rotateSelectedTileOrHovered() {
+                // First try to rotate selected tool
+                if (selectedTile.rotatable && selectedTile.rotations) {
+                    currentRotation = (currentRotation + 1) % selectedTile.rotations.length;
+                    return;
+                }
+
+                // Then try to rotate hovered tile
+                if (hoverCol >= 0 && hoverCol < levelWidth && hoverRow >= 0 && hoverRow < levelHeight) {
+                    const idx = hoverRow * levelWidth + hoverCol;
+                    const currentTileVal = tiles[idx];
+                    const currentTileId = currentTileVal & ~WATER_FLAG;
+                    if (currentTileId === 0) return;
+
+                    for (const category of Object.values(TILE_DEFS)) {
+                        for (const tile of category) {
+                            if (tile.rotatable && tile.rotations) {
+                                const rotIdx = tile.rotations.indexOf(currentTileId);
+                                if (rotIdx !== -1) {
+                                    pushUndo();
+                                    const nextIdx = (rotIdx + 1) % tile.rotations.length;
+                                    const water = currentTileVal & WATER_FLAG;
+                                    tiles[idx] = tile.rotations[nextIdx] | water;
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            function clampCamera() {
+                const viewportWidth = canvas.width / zoom;
+                const viewportHeight = canvas.height / zoom;
+                const levelPixelWidth = levelWidth * 12;
+                const levelPixelHeight = levelHeight * 12;
+                const padding = 48;
+
+                if (levelPixelWidth <= viewportWidth) {
+                    camX = (levelPixelWidth - viewportWidth) / 2;
+                } else {
+                    const minX = -padding;
+                    const maxX = levelPixelWidth - viewportWidth + padding;
+                    camX = Math.max(minX, Math.min(maxX, camX));
+                }
+
+                if (levelPixelHeight <= viewportHeight) {
+                    camY = (levelPixelHeight - viewportHeight) / 2;
+                } else {
+                    const minY = -padding;
+                    const maxY = levelPixelHeight - viewportHeight + padding;
+                    camY = Math.max(minY, Math.min(maxY, camY));
+                }
+            }
+
+            function placeTileAt(e) {
+                const rect = canvas.getBoundingClientRect();
+                const worldX = (e.clientX - rect.left) / zoom + camX;
+                const worldY = (e.clientY - rect.top) / zoom + camY;
+                const col = Math.floor(worldX / 12);
+                const row = Math.floor(worldY / 12);
+
+                if (col < 0 || col >= levelWidth || row < 0 || row >= levelHeight) return;
+
+                let tileId = selectedTile.id;
+
+                // Handle rotation
+                if (selectedTile.rotatable && selectedTile.rotations) {
+                    tileId = selectedTile.rotations[currentRotation];
+                }
+
+                // Handle water flag (Add water)
+                if (selectedTile.isFlag && selectedTile.id === 64) {
+                    // Don't add water to blocks, trampolines, or hollow blocks
+                    const existingTileId = tiles[row * levelWidth + col] & ~WATER_FLAG;
+                    if (existingTileId !== 1 && existingTileId !== 2 && existingTileId !== 56) {
+                        tiles[row * levelWidth + col] |= WATER_FLAG;
+                    }
+                    return;
+                }
+
+                // Handle spawn point placement
+                if (selectedTile.isSpawn) {
+                    spawnCol = col;
+                    spawnRow = row;
+                    document.getElementById('spawnCol').value = spawnCol;
+                    document.getElementById('spawnRow').value = spawnRow;
+                    return;
+                }
+
+                // Handle multi-tile objects with centered placement
+                if (selectedTile.multiTile) {
+                    if (selectedTile.multiTile === 'vring' || selectedTile.multiTile === 'bigvring') {
+                        // 1x2 vertical ring: center vertically
+                        const centeredRow = Math.max(0, Math.min(levelHeight - 2, Math.round(worldY / 12) - 1));
+                        // Preserve water flag for rings
+                        const water0 = tiles[centeredRow * levelWidth + col] & WATER_FLAG;
+                        tiles[centeredRow * levelWidth + col] = selectedTile.ids[0] | water0;
+                        if (centeredRow + 1 < levelHeight) {
+                            const water1 = tiles[(centeredRow + 1) * levelWidth + col] & WATER_FLAG;
+                            tiles[(centeredRow + 1) * levelWidth + col] = selectedTile.ids[1] | water1;
+                        }
+                    } else if (selectedTile.multiTile === 'hring' || selectedTile.multiTile === 'bighring') {
+                        // 2x1 horizontal ring: center horizontally
+                        const centeredCol = Math.max(0, Math.min(levelWidth - 2, Math.round(worldX / 12) - 1));
+                        // Preserve water flag for rings
+                        const water0 = tiles[row * levelWidth + centeredCol] & WATER_FLAG;
+                        tiles[row * levelWidth + centeredCol] = selectedTile.ids[0] | water0;
+                        if (centeredCol + 1 < levelWidth) {
+                            const water1 = tiles[row * levelWidth + centeredCol + 1] & WATER_FLAG;
+                            tiles[row * levelWidth + centeredCol + 1] = selectedTile.ids[1] | water1;
+                        }
+                    } else if (selectedTile.multiTile === 'door') {
+                        // Clear any existing door tiles first
+                        clearOldDoorTiles();
+                        // Use centered grid snapping for 2x2 door
+                        const centeredCol = Math.max(0, Math.min(levelWidth - 2, Math.round(worldX / 12) - 1));
+                        const centeredRow = Math.max(0, Math.min(levelHeight - 2, Math.round(worldY / 12) - 1));
+                        doorCol = centeredCol;
+                        doorRow = centeredRow;
+                        document.getElementById('doorCol').value = centeredCol;
+                        document.getElementById('doorRow').value = centeredRow;
+                        // Place door tiles
+                        for (let dr = 0; dr < 2; dr++) {
+                            for (let dc = 0; dc < 2; dc++) {
+                                if (centeredRow + dr < levelHeight && centeredCol + dc < levelWidth) {
+                                    tiles[(centeredRow + dr) * levelWidth + centeredCol + dc] = 9;
+                                }
+                            }
+                        }
+                    }
+                    return;
+                }
+
+                // Preserve water flag - except for blocks and trampolines which cannot be waterlogged
+                const existingWater = tiles[row * levelWidth + col] & WATER_FLAG;
+                const cannotBeWaterlogged = (tileId === 1 || tileId === 2 || tileId === 56);
+                tiles[row * levelWidth + col] = cannotBeWaterlogged ? tileId : (tileId | existingWater);
+                markUnsavedChanges();
+            }
+
+
+            function eraseTileAt(e) {
+                const rect = canvas.getBoundingClientRect();
+                const worldX = (e.clientX - rect.left) / zoom + camX;
+                const worldY = (e.clientY - rect.top) / zoom + camY;
+                const col = Math.floor(worldX / 12);
+                const row = Math.floor(worldY / 12);
+
+                if (col < 0 || col >= levelWidth || row < 0 || row >= levelHeight) return;
+
+                // Prioritize removing water flag first, unless it's a non-waterloggable block
+                const val = tiles[row * levelWidth + col];
+                const tileId = val & ~WATER_FLAG;
+                const cannotBeWaterlogged = (tileId === 1 || tileId === 2 || tileId === 56);
+
+                if (cannotBeWaterlogged) {
+                    // These blocks shouldn't have water - remove entire tile in one click
+                    tiles[row * levelWidth + col] = 0;
+                } else if ((val & WATER_FLAG) !== 0) {
+                    // Remove water, keep tile
+                    tiles[row * levelWidth + col] = val & ~WATER_FLAG;
+                } else {
+                    // Remove tile
+                    tiles[row * levelWidth + col] = 0;
+                }
+            }
+
+            // ========== LEVEL ACTIONS ==========
+            async function newLevel() {
+                if (!await showConfirm('Create new level? Unsaved changes will be lost.')) return;
+                levelWidth = parseInt(document.getElementById('levelWidth').value) || 11;
+                currentLevel = parseInt(document.getElementById('levelInput').value) || 1;
+                currentLevel = Math.max(1, Math.min(MAX_LEVEL, currentLevel));
+                levelHeight = calculateHeight(currentLevel);
+                tiles = new Uint8Array(levelWidth * levelHeight);
+                spiders = [];
+                // initBorders(); // Removed
+                centerCamera();
+            }
+
+            function resizeLevel() {
+                const newWidth = parseInt(document.getElementById('levelWidth').value) || 11;
+                let newLevel = parseInt(document.getElementById('levelInput').value) || 1;
+                newLevel = Math.max(1, Math.min(MAX_LEVEL, newLevel));
+                const newHeight = calculateHeight(newLevel);
+
+                const newTiles = new Uint8Array(newWidth * newHeight);
+
+                // Copy existing tiles
+                for (let r = 0; r < Math.min(levelHeight, newHeight); r++) {
+                    for (let c = 0; c < Math.min(levelWidth, newWidth); c++) {
+                        newTiles[r * newWidth + c] = tiles[r * levelWidth + c];
+                    }
+                }
+
+                tiles = newTiles;
+                levelWidth = newWidth;
+                levelHeight = newHeight;
+                currentLevel = newLevel;
+                markUnsavedChanges();
+                // initBorders(); // Removed
+                centerCamera();
+            }
+
+            function placeDoor() {
+                // Clear any existing door tiles first
+                clearOldDoorTiles();
+                doorCol = parseInt(document.getElementById('doorCol').value) || 0;
+                doorRow = parseInt(document.getElementById('doorRow').value) || 0;
+
+                // Place door tiles
+                for (let dr = 0; dr < 2; dr++) {
+                    for (let dc = 0; dc < 2; dc++) {
+                        if (doorRow + dr < levelHeight && doorCol + dc < levelWidth) {
+                            tiles[(doorRow + dr) * levelWidth + doorCol + dc] = 9;
+                        }
+                    }
+                }
+                markUnsavedChanges();
+            }
+
+            // ========== CUSTOM MESSAGE BOX ==========
+            function showMessage(text) {
+                return new Promise(resolve => {
+                    const overlay = document.getElementById('msgboxOverlay');
+                    const textEl = document.getElementById('msgboxText');
+                    const btnsEl = document.getElementById('msgboxButtons');
+
+                    textEl.textContent = text;
+                    btnsEl.innerHTML = '';
+
+                    const okBtn = document.createElement('button');
+                    okBtn.className = 'btn btn-primary';
+                    okBtn.textContent = 'OK';
+                    okBtn.onclick = () => { closeMsgbox(); resolve(); };
+                    btnsEl.appendChild(okBtn);
+
+                    overlay.classList.add('visible');
+                    okBtn.focus();
+                });
+            }
+
+            function showConfirm(text) {
+                return new Promise(resolve => {
+                    const overlay = document.getElementById('msgboxOverlay');
+                    const textEl = document.getElementById('msgboxText');
+                    const btnsEl = document.getElementById('msgboxButtons');
+
+                    textEl.textContent = text;
+                    btnsEl.innerHTML = '';
+
+                    const cancelBtn = document.createElement('button');
+                    cancelBtn.className = 'btn btn-secondary';
+                    cancelBtn.textContent = 'Cancel';
+                    cancelBtn.onclick = () => { closeMsgbox(); resolve(false); };
+
+                    const okBtn = document.createElement('button');
+                    okBtn.className = 'btn btn-primary';
+                    okBtn.textContent = 'OK';
+                    okBtn.onclick = () => { closeMsgbox(); resolve(true); };
+
+                    btnsEl.appendChild(cancelBtn);
+                    btnsEl.appendChild(okBtn);
+
+                    overlay.classList.add('visible');
+                    okBtn.focus();
+                });
+            }
+
+            // Danger-styled confirm for destructive actions (overwrite warnings)
+            function showDangerConfirm(text) {
+                return new Promise(resolve => {
+                    const overlay = document.getElementById('msgboxOverlay');
+                    const textEl = document.getElementById('msgboxText');
+                    const btnsEl = document.getElementById('msgboxButtons');
+
+                    textEl.innerHTML = '<span style="color:#ff4444;font-weight:bold;font-size:1.1em">⚠ WARNING</span><br><br>' + text.replace(/\n/g, '<br>');
+                    btnsEl.innerHTML = '';
+
+                    const cancelBtn = document.createElement('button');
+                    cancelBtn.className = 'btn btn-secondary';
+                    cancelBtn.textContent = 'Cancel';
+                    cancelBtn.onclick = () => { closeMsgbox(); resolve(false); };
+
+                    const overwriteBtn = document.createElement('button');
+                    overwriteBtn.className = 'btn btn-danger';
+                    overwriteBtn.style.cssText = 'background:#cc2200;color:#fff;font-weight:bold';
+                    overwriteBtn.textContent = 'OVERWRITE';
+                    overwriteBtn.onclick = () => { closeMsgbox(); resolve(true); };
+
+                    btnsEl.appendChild(cancelBtn);
+                    btnsEl.appendChild(overwriteBtn);
+
+                    overlay.classList.add('visible');
+                    cancelBtn.focus();
+                });
+            }
+
+            function closeMsgbox() {
+                document.getElementById('msgboxOverlay').classList.remove('visible');
+            }
+
+            // ========== API CONFIG ==========
+            const API_BASE = '/api';
+            let currentLevelId = null;
+            let currentUser = null;
+            let loadTabActive = 'online'; // 'online' or 'local'
+
+            // ========== AUTH ==========
+            // Uses shared session token from main menu (bounceSession) - validated server-side
+            function getSessionToken() {
+                return localStorage.getItem('bounceSession');
+            }
+
+            async function validateEditorSession() {
+                const token = getSessionToken();
+                if (!token) {
+                    currentUser = null;
+                    updateUploadButtonState();
+                    return;
+                }
+                try {
+                    const res = await fetch(`${API_BASE}/session/validate`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (res.ok) {
+                        currentUser = await res.json();
+                    } else {
+                        currentUser = null;
+                    }
+                } catch {
+                    currentUser = null;
+                }
+                updateUploadButtonState();
+            }
+
+            function updateUploadButtonState() {
+                const btn = document.getElementById('btnSaveUpload');
+                if (!btn) return;
+                if (currentUser) {
+                    btn.disabled = false;
+                    btn.title = `Upload as ${currentUser.username}`;
+                } else {
+                    btn.disabled = true;
+                    btn.title = 'Log in on the main page to upload levels';
+                }
+            }
+
+            // ========== SAVE MODAL ==========
+            function openSaveModal() {
+                document.getElementById('saveModal').classList.add('visible');
+            }
+
+            function closeSaveModal() {
+                document.getElementById('saveModal').classList.remove('visible');
+            }
+
+            // RLE tile compression — header 'RL' followed by (value, count) pairs
+            // Count uses variable-length encoding: counts 1-255 fit in one byte,
+            // larger runs are split into multiple pairs.
+            function rlEncodeTiles(tiles) {
+                const out = [82, 76]; // 'R','L' header
+                let i = 0;
+                while (i < tiles.length) {
+                    const val = tiles[i];
+                    let count = 1;
+                    while (i + count < tiles.length && tiles[i + count] === val && count < 255) {
+                        count++;
+                    }
+                    out.push(val, count);
+                    i += count;
+                }
+                return btoa(String.fromCharCode(...out));
+            }
+
+            // Decode tiles — auto-detects RLE (header 'RL') vs legacy raw base64
+            function rleDecodeTiles(encoded, expectedSize) {
+                const raw = atob(encoded);
+                const tiles = new Uint8Array(expectedSize);
+                // Check for 'RL' header
+                if (raw.length >= 2 && raw.charCodeAt(0) === 82 && raw.charCodeAt(1) === 76) {
+                    let pos = 2, idx = 0;
+                    while (pos + 1 < raw.length && idx < expectedSize) {
+                        const val = raw.charCodeAt(pos);
+                        const count = raw.charCodeAt(pos + 1);
+                        const end = Math.min(idx + count, expectedSize);
+                        tiles.fill(val, idx, end);
+                        idx = end;
+                        pos += 2;
+                    }
+                } else {
+                    // Legacy: raw bytes
+                    const len = Math.min(raw.length, expectedSize);
+                    for (let i = 0; i < len; i++) {
+                        tiles[i] = raw.charCodeAt(i);
+                    }
+                }
+                return tiles;
+            }
+
+            function getLevelData() {
+                const parsedCol = parseInt(document.getElementById('spawnCol').value);
+                const parsedRow = parseInt(document.getElementById('spawnRow').value);
+                spawnCol = isNaN(parsedCol) ? 2 : parsedCol;
+                spawnRow = isNaN(parsedRow) ? 2 : parsedRow;
+                spawnSize = getSpawnSizeValue();
+
+                // Convert grid to pixels for backend
+                const spawnX = spawnCol * 12 + 6;
+                const spawnY = spawnRow * 12 + 6;
+
+                return {
+                    name: document.getElementById('levelName').value || 'Untitled',
+                    width: levelWidth,
+                    height: levelHeight,
+                    spawnX, spawnY, spawnSize,
+                    doorCol, doorRow,
+                    tiles: rlEncodeTiles(tiles),
+                    spiders
+                };
+            }
+
+            // ========== AUTO-SAVE (IndexedDB) ==========
+            const DEBOUNCE_DELAY = 300; // Save 300ms after last change (responsive yet efficient)
+            let debounceTimer = null;
+            let hasUnsavedChanges = false;
+            let lastSavedData = null; // Track last saved state to avoid redundant writes
+            let pendingAutosave = null; // Track pending autosave promise
+
+            async function autoSave(force = false) {
+                if (!hasUnsavedChanges && !force) return;
+
+                try {
+                    const levelData = getLevelData();
+                    levelData.autosavedAt = new Date().toISOString();
+                    levelData.currentLevelId = currentLevelId; // Track if editing existing level
+
+                    // Serialize once for comparison
+                    const serialized = JSON.stringify(levelData);
+
+                    // Skip if data hasn't actually changed (prevents redundant writes)
+                    if (!force && serialized === lastSavedData) {
+                        hasUnsavedChanges = false;
+                        return;
+                    }
+
+                    // Save to IndexedDB
+                    pendingAutosave = BounceStorage.saveAutosave(levelData);
+                    await pendingAutosave;
+                    pendingAutosave = null;
+
+                    lastSavedData = serialized;
+                    hasUnsavedChanges = false;
+                    console.log('Auto-saved at', new Date().toLocaleTimeString());
+                } catch (e) {
+                    console.warn('Auto-save failed:', e);
+                    pendingAutosave = null;
+                }
+            }
+
+            // Debounced save - triggers 300ms after the last change
+            // This ensures: instant refresh still saves (via beforeunload/visibilitychange)
+            // while preventing excessive writes during rapid edits
+            function markUnsavedChanges() {
+                hasUnsavedChanges = true;
+
+                // Clear existing timer
+                if (debounceTimer) {
+                    clearTimeout(debounceTimer);
+                }
+
+                // Schedule save after debounce delay
+                debounceTimer = setTimeout(() => {
+                    autoSave();
+                }, DEBOUNCE_DELAY);
+            }
+
+            // Immediate sync save for critical moments (page unload)
+            function saveImmediately() {
+                if (debounceTimer) {
+                    clearTimeout(debounceTimer);
+                    debounceTimer = null;
+                }
+                // Note: We trigger the save but can't await in beforeunload
+                // IndexedDB transactions may complete even after page starts unloading
+                autoSave(true);
+            }
+
+            function startAutoSave() {
+                // Save on page unload - multiple fallbacks for reliability
+                window.addEventListener('beforeunload', saveImmediately);
+
+                // visibilitychange is more reliable than beforeunload in modern browsers
+                document.addEventListener('visibilitychange', () => {
+                    if (document.visibilityState === 'hidden') {
+                        saveImmediately();
+                    }
+                });
+
+                // pagehide is the most reliable event for mobile and bfcache
+                window.addEventListener('pagehide', saveImmediately);
+            }
+
+            async function checkAutoSave() {
+                try {
+                    // First, migrate any existing localStorage data to IndexedDB
+                    await BounceStorage.migrateFromLocalStorage();
+
+                    const data = await BounceStorage.getAutosave();
+                    if (!data) return;
+
+                    applyLevelData(data);
+                    console.log('Restored auto-saved session from IndexedDB');
+                } catch (e) {
+                    console.warn('Failed to restore auto-save:', e);
+                    // Try to clear corrupted data
+                    BounceStorage.clearAutosave().catch(() => { });
+                }
+            }
+
+            async function clearAutoSave() {
+                try {
+                    await BounceStorage.clearAutosave();
+                } catch (e) {
+                    console.warn('Failed to clear autosave:', e);
+                }
+                hasUnsavedChanges = false;
+            }
+
+            function saveLevel() {
+                openSaveModal();
+            }
+
+            async function saveToServer() {
+                const token = getSessionToken();
+                if (!token) {
+                    showMessage('You must be logged in to upload levels.\n\nPlease log in on the main page first, then return to the editor.');
+                    return;
+                }
+
+                const levelData = getLevelData();
+
+                // Always POST — the API handles name-based deduplication.
+                // Check if same-name level exists first to warn the user.
+                try {
+                    const checkRes = await fetch(`${API_BASE}/levels?per_page=1&search=${encodeURIComponent(levelData.name)}`, { cache: 'no-cache' });
+                    if (checkRes.ok) {
+                        const checkData = await checkRes.json();
+                        const match = checkData.levels.find(l => l.name === levelData.name);
+                        if (match) {
+                            if (!await showDangerConfirm(`An online level named "${levelData.name}" already exists (by ${match.creator_name}).\n\nUploading will OVERWRITE the existing level data. This cannot be undone.`)) {
+                                return;
+                            }
+                        }
+                    }
+                } catch (e) {
+                    // If check fails, proceed anyway — server will handle it
+                }
+
+                try {
+                    const response = await fetch(`${API_BASE}/levels`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(levelData)
+                    });
+
+                    const result = await response.json();
+
+                    if (response.status === 401) {
+                        currentUser = null;
+                        updateUploadButtonState();
+                        showMessage('Your session has expired. Please log in again on the main page.');
+                        return;
+                    }
+
+                    if (!response.ok) throw new Error(result.error || 'Failed to save');
+
+                    if (result.id) currentLevelId = result.id;
+                    clearAutoSave();
+                    closeSaveModal();
+
+                    const msg = result.overwritten ? 'Level overwritten successfully!' : 'Level uploaded successfully!';
+                    showMessage(msg);
+                } catch (err) {
+                    console.error('Save error:', err);
+                    showMessage('Failed to upload to server: ' + err.message);
+                }
+            }
+
+            async function saveToLocalStorage() {
+                const levelData = getLevelData();
+                levelData.savedAt = new Date().toISOString();
+
+                try {
+                    const existingLevel = await BounceStorage.getLevel(levelData.name);
+                    if (existingLevel) {
+                        if (!await showDangerConfirm(`A local level named "${levelData.name}" already exists.\n\nSaving will OVERWRITE the existing level data. This cannot be undone.`)) {
+                            return;
+                        }
+                    }
+
+                    await BounceStorage.saveLevel(levelData);
+                    await clearAutoSave();
+                    closeSaveModal();
+                    showMessage('Level saved locally!');
+                } catch (err) {
+                    console.error('Save error:', err);
+                    showMessage('Failed to save level locally: ' + err.message);
+                }
+            }
+
+            // ========== LOAD MODAL ==========
+            function openLoadModal() {
+                document.getElementById('loadModal').classList.add('visible');
+                setLoadTab('online');
+            }
+
+            function closeLoadModal() {
+                document.getElementById('loadModal').classList.remove('visible');
+            }
+
+            function setLoadTab(tab) {
+                loadTabActive = tab;
+                document.getElementById('tabOnline').classList.toggle('active', tab === 'online');
+                document.getElementById('tabLocal').classList.toggle('active', tab === 'local');
+
+                if (tab === 'online') {
+                    loadOnlineLevels();
+                } else {
+                    loadLocalLevels();
+                }
+            }
+
+            async function loadOnlineLevels() {
+                const listEl = document.getElementById('levelList');
+                listEl.innerHTML = '<div class="level-list-empty">Loading...</div>';
+
+                try {
+                    const response = await fetch(`${API_BASE}/levels?per_page=50`, { cache: 'no-cache' });
+                    if (!response.ok) throw new Error('Failed to fetch');
+
+                    const data = await response.json();
+                    const levels = data.levels;
+
+                    if (levels.length === 0) {
+                        listEl.innerHTML = '<div class="level-list-empty">No online levels found</div>';
+                        return;
+                    }
+
+                    listEl.innerHTML = levels.map(level => `
+                    <div class="level-item" onclick="loadOnlineLevel(${level.id})">
+                        <div class="level-item-name">${escapeHtml(level.name)}</div>
+                        <div class="level-item-meta">by ${escapeHtml(level.creator_name)} • ${level.width}×${level.height} • ${level.views} views • ${level.likes} likes</div>
+                    </div>
+                `).join('');
+                } catch (err) {
+                    console.error('Load error:', err);
+                    listEl.innerHTML = '<div class="level-list-empty">Failed to load online levels.<br>Server may be unavailable.</div>';
+                }
+            }
+
+            async function loadLocalLevels() {
+                const listEl = document.getElementById('levelList');
+                listEl.innerHTML = '<div class="level-list-empty">Loading...</div>';
+
+                try {
+                    const localLevels = await BounceStorage.getLevels();
+
+                    if (localLevels.length === 0) {
+                        listEl.innerHTML = '<div class="level-list-empty">No local levels saved</div>';
+                        return;
+                    }
+
+                    // Sort by savedAt descending (newest first)
+                    localLevels.sort((a, b) => {
+                        const dateA = a.savedAt ? new Date(a.savedAt) : new Date(0);
+                        const dateB = b.savedAt ? new Date(b.savedAt) : new Date(0);
+                        return dateB - dateA;
+                    });
+
+                    listEl.innerHTML = localLevels.map((level) => `
+                    <div class="level-item">
+                        <div class="level-item-name">${escapeHtml(level.name)}</div>
+                        <div class="level-item-meta">${level.width}×${level.height} • ${formatDate(level.savedAt)}</div>
+                        <div class="level-item-actions">
+                            <button class="btn btn-tiny btn-primary" onclick="loadLocalLevel('${escapeHtml(level.name).replace(/'/g, "\\'")}')">Load</button>
+                            <button class="btn btn-tiny btn-danger" onclick="deleteLocalLevel('${escapeHtml(level.name).replace(/'/g, "\\'")}')">Delete</button>
+                        </div>
+                    </div>
+                `).join('');
+                } catch (err) {
+                    console.error('Load error:', err);
+                    listEl.innerHTML = '<div class="level-list-empty">Failed to load local levels.</div>';
+                }
+            }
+
+            async function loadOnlineLevel(id) {
+                if (!await showConfirm('Load this online level?\n\nAny unsaved changes to the current level will be lost.')) return;
+                try {
+                    const headers = {};
+                    const token = getSessionToken();
+                    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                    const response = await fetch(`${API_BASE}/levels/${id}`, { headers });
+                    if (!response.ok) throw new Error('Level not found');
+
+                    const data = await response.json();
+                    const levelData = { ...data.level_data, name: data.name, width: data.width, height: data.height };
+                    applyLevelData(levelData);
+                    currentLevelId = data.id;
+                    closeLoadModal();
+                } catch (err) {
+                    console.error('Load error:', err);
+                    showMessage('Failed to load level: ' + err.message);
+                }
+            }
+
+            async function loadLocalLevel(name) {
+                if (!await showConfirm('Load this local level?\n\nAny unsaved changes to the current level will be lost.')) return;
+                try {
+                    const level = await BounceStorage.getLevel(name);
+                    if (level) {
+                        applyLevelData(level);
+                        currentLevelId = null;
+                        closeLoadModal();
+                    } else {
+                        showMessage('Level not found');
+                    }
+                } catch (err) {
+                    console.error('Load error:', err);
+                    showMessage('Failed to load level: ' + err.message);
+                }
+            }
+
+            async function deleteLocalLevel(name) {
+                if (!await showConfirm('Delete this local level?')) return;
+
+                try {
+                    await BounceStorage.deleteLevel(name);
+                    loadLocalLevels();
+                } catch (err) {
+                    console.error('Delete error:', err);
+                    showMessage('Failed to delete level: ' + err.message);
+                }
+            }
+
+            function loadLevel() {
+                openLoadModal();
+            }
+
+            // Helper functions
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            function formatDate(dateStr) {
+                if (!dateStr) return 'Unknown';
+                const date = new Date(dateStr);
+                return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+
+            function applyLevelData(data) {
+                document.getElementById('levelName').value = data.name || 'Untitled';
+                levelWidth = data.width;
+                levelHeight = data.height;
+                document.getElementById('levelWidth').value = levelWidth;
+
+                // Calculate level from height (reverse of calculateHeight)
+                currentLevel = Math.max(1, Math.min(MAX_LEVEL, Math.round((levelHeight - BASE_HEIGHT) / HEIGHT_PER_LEVEL + 1)));
+                document.getElementById('levelInput').value = currentLevel;
+                updateHeightDisplay();
+
+                // Decode tiles — handles both RLE-compressed and legacy raw base64
+                const expectedSize = levelWidth * levelHeight;
+                tiles = rleDecodeTiles(data.tiles, expectedSize);
+
+                spawnCol = Math.floor((data.spawnX !== undefined ? data.spawnX : 30) / 12);
+                spawnRow = Math.floor((data.spawnY !== undefined ? data.spawnY : 30) / 12);
+                spawnSize = data.spawnSize;
+                document.getElementById('spawnCol').value = spawnCol;
+                document.getElementById('spawnRow').value = spawnRow;
+                setSpawnSizeValue(spawnSize);
+
+                doorCol = data.doorCol;
+                doorRow = data.doorRow;
+                document.getElementById('doorCol').value = doorCol;
+                document.getElementById('doorRow').value = doorRow;
+
+                spiders = data.spiders || [];
+
+                centerCamera();
+            }
+
+            // ========== SETUP MODAL LISTENERS ==========
+            function setupModalListeners() {
+                // Save modal
+                document.getElementById('btnSaveCancel').addEventListener('click', closeSaveModal);
+                document.getElementById('btnSaveLocal').addEventListener('click', saveToLocalStorage);
+                document.getElementById('btnSaveUpload').addEventListener('click', saveToServer);
+
+                // Load modal
+                document.getElementById('btnLoadCancel').addEventListener('click', closeLoadModal);
+                document.getElementById('tabOnline').addEventListener('click', () => setLoadTab('online'));
+                document.getElementById('tabLocal').addEventListener('click', () => setLoadTab('local'));
+
+                // Close modals on overlay click
+                document.getElementById('saveModal').addEventListener('click', (e) => {
+                    if (e.target.id === 'saveModal') closeSaveModal();
+                });
+                document.getElementById('loadModal').addEventListener('click', (e) => {
+                    if (e.target.id === 'loadModal') closeLoadModal();
+                });
+            }
+
+            // ========== START ==========
+            setupModalListeners();
+            init();
+        } // end bootEditorApp
+
+        // Boot immediately if editor was already mounted, otherwise wait for mount event
+        if (window.__editorReady) {
+            bootEditorApp();
+        } else {
+            window.addEventListener('editor-mount', function () {
+                bootEditorApp();
+            });
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,40 @@
+# ── Secrets & backend config (NEVER commit) ─────────────────────────
+config.php
+**/config.php
+*.env
+.env
+secrets.php
+**/secrets.php
+
+# ── Database dumps / schema with credentials ────────────────────────
+*.sql
+
+# ── Backend (kept private / separate) ───────────────────────────────
+/api/
+
+# ── Unrelated / heavy / non-distributable ───────────────────────────
+*.ipa
+/player/
+/cam/
+/BouncEngine-iOS/
+.well-known/
+
+# ── Stale backups ───────────────────────────────────────────────────
+*- Copy.html
+**/backupengine.html
+
+# ── Planning / internal docs ────────────────────────────────────────
+ATTACK_PLAN.md
+
+# ── Dependencies / build ────────────────────────────────────────────
+node_modules/
+dist/
+build/
+
+# ── OS / editor cruft ───────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.vscode/
+.idea/
