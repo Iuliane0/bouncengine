@@ -7810,13 +7810,16 @@
             if (window._levelAccessBlocked) return;
             if (_splashLoaded && _startSignal && !preloadStarted) {
                 preloadStarted = true;
-                showLoadingScreen();
                 preloadAndStart();
             }
         }
         splashImage.onload = function () {
             if (window._levelAccessBlocked) return;
             _splashLoaded = true;
+            // Paint the splash straight away, BEFORE waiting for the start signal, so the
+            // parent cross-fades into artwork instead of an empty black frame. The game
+            // itself still doesn't begin until bounceStart arrives.
+            showLoadingScreen();
             _tryBoot();
         };
         window.addEventListener('message', function (e) {
