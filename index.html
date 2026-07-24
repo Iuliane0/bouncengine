@@ -1760,7 +1760,7 @@
          blended image — no hard cut for the blur to fail to hide. */
       #gameSector{
         position:fixed; inset:0; z-index:900; display:none; background:#000; overflow:hidden;
-        opacity:0; transition:opacity 240ms cubic-bezier(.4,0,.25,1); will-change:opacity;
+        opacity:0; transition:opacity 150ms cubic-bezier(.4,0,.25,1); will-change:opacity;
       }
       #gameSector.gs-in{ opacity:1; }
       #gameSector iframe{ position:absolute; inset:0; width:100%; height:100%; border:0; margin:0; padding:0; display:block; background:#000; }
@@ -1775,9 +1775,9 @@
                 backdrop-filter:blur(0px) saturate(135%);
         /* opacity and blur share a duration so they land together — otherwise the
            shorter one ends first and the sequence steps instead of gliding. */
-        transition:opacity 280ms cubic-bezier(.33,0,.18,1),
-                   backdrop-filter 280ms cubic-bezier(.33,0,.18,1),
-                   -webkit-backdrop-filter 280ms cubic-bezier(.33,0,.18,1);
+        transition:opacity 170ms cubic-bezier(.33,0,.18,1),
+                   backdrop-filter 170ms cubic-bezier(.33,0,.18,1),
+                   -webkit-backdrop-filter 170ms cubic-bezier(.33,0,.18,1);
         will-change:backdrop-filter, opacity;
       }
       #liquidTransition.lt-on{ display:block; }
@@ -5251,11 +5251,11 @@
             // ============================================================
             const GameSector = (function () {
                 const READY_TIMEOUT_MS = 8000;   // reveal anyway if 'bounceReady' is missed (back button still exits)
-                const CROSSFADE_MS = 240;        // must match #gameSector's opacity transition
-                const MIN_HOLD_MS = 260;         // hold at peak blur long enough to finish the cross-fade
-                const SWAP_SETTLE_MS = 220;      // cap for the restored-submenu paint before fading back
-                const COVER_SAFETY_MS = 520;     // fallback if transitionend is missed (blur is 280ms)
-                const REVEAL_SAFETY_MS = 540;
+                const CROSSFADE_MS = 150;        // must match #gameSector's opacity transition
+                const MIN_HOLD_MS = 170;         // >= CROSSFADE_MS, or we'd reveal a half-faded sector
+                const SWAP_SETTLE_MS = 160;      // cap for the restored-submenu paint before fading back
+                const COVER_SAFETY_MS = 300;     // fallback if transitionend is missed (blur is 170ms)
+                const REVEAL_SAFETY_MS = 320;
 
                 let phase = 'idle';   // 'idle' | 'entering' | 'playing' | 'exiting'
                 let active = false, isOnline = false, frame = null;

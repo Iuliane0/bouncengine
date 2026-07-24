@@ -7784,6 +7784,11 @@
             // Pre-warm tile cache so first frames don't stall on cache misses
             prewarmTileCache();
 
+            // ---- everything above is LOADING and runs during the parent's transition ----
+            // Wait for the screen to be covered before the game actually starts, so no
+            // gameplay (or speedrun time) elapses while the player still can't see it.
+            await _startGate;
+
             // Initialize and start speedrun timer
             _sr.init(_currentLevelNum);
             _sr.start();
@@ -7806,11 +7811,17 @@
         // immediately. We wait for BOTH the splash image and the start signal.
         let _splashLoaded = false;
         let _startSignal = !_sectorEmbedded; // standalone: no wait
+        // The gate the RUN step waits on. Loading (textures, level data, tile cache) is
+        // NOT gated — it happens while the parent's transition plays, so the transition
+        // isn't padded by the whole engine boot. Only the moment the game actually starts
+        // running waits for the screen to be covered.
+        let _startResolve = null;
+        const _startGate = _sectorEmbedded ? new Promise(res => { _startResolve = res; }) : Promise.resolve();
         function _tryBoot() {
             if (window._levelAccessBlocked) return;
-            if (_splashLoaded && _startSignal && !preloadStarted) {
+            if (_splashLoaded && !preloadStarted) {
                 preloadStarted = true;
-                preloadAndStart();
+                preloadAndStart();   // preloads now; awaits _startGate before running
             }
         }
         splashImage.onload = function () {
@@ -7824,7 +7835,11 @@
         };
         window.addEventListener('message', function (e) {
             if (e.origin !== window.location.origin) return;
-            if (e.data && e.data.type === 'bounceStart') { _startSignal = true; _tryBoot(); }
+            if (e.data && e.data.type === 'bounceStart') {
+                _startSignal = true;
+                if (_startResolve) { _startResolve(); _startResolve = null; }
+                _tryBoot();
+            }
         });
 
         // Check if loading an IgorBounce level and use Igor splash
