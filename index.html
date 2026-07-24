@@ -5250,7 +5250,7 @@
                 let phase = 'idle';   // 'idle' | 'entering' | 'playing' | 'exiting'
                 let active = false, isOnline = false, frame = null;
                 let covered = false, ready = false, minHoldMet = false;
-                let readyTimer = null, holdTimer = null, pushedState = false;
+                let readyTimer = null, holdTimer = null, pushedState = false, startRetry = null;
 
                 const host = () => document.getElementById('gameSector');
                 const lt = document.getElementById('liquidTransition');
@@ -5297,6 +5297,7 @@
                     setTimeout(done, REVEAL_SAFETY_MS);
                 }
                 function teardownFrame() {
+                    stopStartHandshake();
                     if (frame) { try { frame.src = 'about:blank'; } catch (e) { } try { frame.remove(); } catch (e) { } frame = null; }
                     const h = host(); if (h) h.style.display = 'none';
                 }
@@ -5311,6 +5312,20 @@
                 function postStart() {
                     try { if (frame && frame.contentWindow) frame.contentWindow.postMessage({ type: 'bounceStart' }, window.location.origin); } catch (e) { }
                 }
+                // The iframe document may not have registered its message listener yet when
+                // the blur completes (big engine bundle over a slow link), and a postMessage
+                // sent before that is silently dropped — leaving the engine parked forever.
+                // So keep re-sending until it confirms with bounceReady. The engine's boot is
+                // idempotent (guarded by preloadStarted), so repeats are harmless.
+                function beginStartHandshake() {
+                    postStart();
+                    stopStartHandshake();
+                    startRetry = setInterval(postStart, 150);
+                    setTimeout(stopStartHandshake, READY_TIMEOUT_MS);
+                }
+                function stopStartHandshake() {
+                    if (startRetry) { clearInterval(startRetry); startRetry = null; }
+                }
                 function maybeReveal() {
                     if (phase !== 'entering') return;
                     if (covered && ready && minHoldMet) {
@@ -5318,13 +5333,13 @@
                         blurOut(() => { try { if (frame) { frame.focus(); if (frame.contentWindow) frame.contentWindow.focus(); } } catch (e) { } });
                     }
                 }
-                function onReady() { if (phase !== 'entering') return; ready = true; maybeReveal(); }
+                function onReady() { stopStartHandshake(); if (phase !== 'entering') return; ready = true; maybeReveal(); }
                 function onCoveredEnter() {
                     if (phase === 'exiting') { doSwap(); return; }   // exit arrived before blur-in completed
                     // Screen is fully blurred now: swap the menu out for the game sector
                     // (invisible under the blur) and only THEN let the engine boot.
                     const h = host(); if (h) h.style.display = 'block';
-                    postStart();                                     // blur-in done → NOW the engine may boot
+                    beginStartHandshake();                           // blur-in done → NOW the engine may boot
                     holdTimer = setTimeout(() => { minHoldMet = true; maybeReveal(); }, MIN_HOLD_MS);
                     maybeReveal();
                 }
