@@ -7798,14 +7798,28 @@
 
         // Wait for splash image to load, then show it and start loading textures
         let preloadStarted = false;  // Prevent re-entry from splash image change
-        splashImage.onload = function () {
+        // Boot gating: when embedded as a sector, the engine must NOT start until the
+        // parent's transition is done and it posts {type:'bounceStart'}. Standalone starts
+        // immediately. We wait for BOTH the splash image and the start signal.
+        let _splashLoaded = false;
+        let _startSignal = !_sectorEmbedded; // standalone: no wait
+        function _tryBoot() {
             if (window._levelAccessBlocked) return;
-            showLoadingScreen();
-            if (!preloadStarted) {
+            if (_splashLoaded && _startSignal && !preloadStarted) {
                 preloadStarted = true;
+                showLoadingScreen();
                 preloadAndStart();
             }
+        }
+        splashImage.onload = function () {
+            if (window._levelAccessBlocked) return;
+            _splashLoaded = true;
+            _tryBoot();
         };
+        window.addEventListener('message', function (e) {
+            if (e.origin !== window.location.origin) return;
+            if (e.data && e.data.type === 'bounceStart') { _startSignal = true; _tryBoot(); }
+        });
 
         // Check if loading an IgorBounce level and use Igor splash
         const urlParams = new URLSearchParams(window.location.search);

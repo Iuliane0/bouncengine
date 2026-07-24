@@ -1763,96 +1763,48 @@
 </head>
 
 <body>
-    <!-- ===== GAME SECTOR (engine iframe host) + FRUTIGER-AERO LIQUID TRANSITION =====
+    <!-- ===== GAME SECTOR (engine iframe host) + LIQUID-GLASS BLUR TRANSITION =====
          Injected OUTSIDE .game-container on purpose: that element is will-change:transform
-         + overflow:hidden, which makes it a containing block for position:fixed descendants,
-         so a fixed iframe nested inside it would be clipped/scaled into the 320x180 box.
-         As direct <body> children these are viewport-relative and paint above the menu. -->
+         + overflow:hidden (a containing block for position:fixed), so a fixed iframe nested
+         inside it would be clipped into the 320x180 box. As <body> children these are
+         viewport-relative and paint above the menu. -->
     <style>
       #gameSector{ position:fixed; inset:0; z-index:900; display:none; background:#000; overflow:hidden; }
       #gameSector iframe{ position:absolute; inset:0; width:100%; height:100%; border:0; margin:0; padding:0; display:block; background:#000; }
 
+      /* A quick, smooth liquid-glass blur of whatever is behind it — the menu on the way
+         in, the game on the way out. No colored wipe, no particles: just a clean frosted
+         blur that ramps up and back down. */
       #liquidTransition{
-        position:fixed; inset:0; z-index:950; display:none; pointer-events:none; overflow:hidden;
-        --aqua:#16d2ff; --teal:#0ea5a5; --deep:#0a3a5c; --foam:#eafcff;
-        --lt-cover-dur:560ms; --lt-reveal-dur:600ms; --lt-ease:cubic-bezier(.66,0,.24,1);
+        position:fixed; inset:0; z-index:950; display:none; opacity:0; pointer-events:none;
+        background:radial-gradient(135% 135% at 50% 42%, rgba(150,225,255,.05), rgba(10,45,75,.10) 68%, rgba(8,30,55,.16));
+        -webkit-backdrop-filter:blur(0px) saturate(135%);
+                backdrop-filter:blur(0px) saturate(135%);
+        transition:opacity .34s ease,
+                   backdrop-filter .40s cubic-bezier(.4,0,.2,1),
+                   -webkit-backdrop-filter .40s cubic-bezier(.4,0,.2,1);
+        will-change:backdrop-filter, opacity;
       }
-      #liquidTransition.lt-on{ display:block; pointer-events:auto; }
-
-      #liquidTransition .lt-sheet{
-        position:absolute; top:-6vh; left:-15vw; width:130vw; height:112vh;
-        transform:translate3d(-140vw,0,0);
-        background:
-          radial-gradient(120% 80% at 30% 18%, rgba(234,252,255,.60), rgba(234,252,255,0) 46%),
-          linear-gradient(102deg, var(--deep) 0%, var(--teal) 34%, var(--aqua) 70%, var(--foam) 100%);
-        -webkit-mask:linear-gradient(90deg, transparent 0%, #000 9%, #000 91%, transparent 100%);
-                mask:linear-gradient(90deg, transparent 0%, #000 9%, #000 91%, transparent 100%);
-        filter:url(#lt-liquid);
+      #liquidTransition.lt-on{ display:block; }
+      #liquidTransition.lt-blur{
+        opacity:1;
+        -webkit-backdrop-filter:blur(22px) saturate(155%);
+                backdrop-filter:blur(22px) saturate(155%);
       }
-      /* If the SVG filter can't be referenced (some WebKit), keep a solid opaque sheet so the boot never shows */
-      @supports not (filter: url(#lt-liquid)){ #liquidTransition .lt-sheet{ filter:none; -webkit-mask:none; mask:none; } }
-      /* cover sweep (off-left -> covering) */
-      #liquidTransition.lt-anim .lt-sheet{ transition:transform var(--lt-cover-dur) var(--lt-ease); will-change:transform; }
-      #liquidTransition.lt-cover .lt-sheet{ transform:translate3d(0,0,0); }
-      /* reveal sweep (covering -> off-right) */
-      #liquidTransition.lt-revealing .lt-sheet{ transition:transform var(--lt-reveal-dur) var(--lt-ease); will-change:transform; }
-      #liquidTransition.lt-reveal .lt-sheet{ transform:translate3d(140vw,0,0); }
-
-      /* bloom flare at t0 */
-      #liquidTransition .lt-flare{
-        position:absolute; left:50%; top:50%; width:10px; height:10px; margin:-5px 0 0 -5px; border-radius:50%;
-        background:radial-gradient(circle, #fff 0%, rgba(214,247,255,.9) 30%, rgba(22,210,255,0) 70%);
-        opacity:0; transform:scale(.2); pointer-events:none; mix-blend-mode:screen;
+      /* No backdrop-filter (older WebKit/Firefox): fall back to a soft frosted veil. */
+      @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+        #liquidTransition{ background:radial-gradient(135% 135% at 50% 42%, rgba(214,242,255,.55), rgba(120,180,220,.66)); }
       }
-      #liquidTransition.lt-flash .lt-flare{ animation:lt-bloom .6s ease-out; }
-      @keyframes lt-bloom{ 0%{opacity:0;transform:scale(.2)} 22%{opacity:1} 100%{opacity:0;transform:scale(36)} }
-
-      /* rising bubbles during the aqua hold */
-      #liquidTransition .lt-bubbles{ position:absolute; inset:0; pointer-events:none; opacity:0; transition:opacity .2s linear; }
-      #liquidTransition.lt-holding .lt-bubbles{ opacity:1; }
-      #liquidTransition .lt-bubbles span{
-        position:absolute; bottom:-8%; width:1.2vmax; height:1.2vmax; border-radius:50%; opacity:0;
-        background:radial-gradient(circle at 35% 30%, rgba(255,255,255,.95), rgba(234,252,255,.15) 60%, rgba(234,252,255,0) 72%);
-      }
-      #liquidTransition.lt-holding .lt-bubbles span{ animation:lt-rise 2.4s ease-in infinite; }
-      #liquidTransition .lt-bubbles span:nth-child(1){ left:20%; animation-delay:0s; }
-      #liquidTransition .lt-bubbles span:nth-child(2){ left:35%; width:1.6vmax; height:1.6vmax; animation-delay:.5s; }
-      #liquidTransition .lt-bubbles span:nth-child(3){ left:50%; animation-delay:.9s; }
-      #liquidTransition .lt-bubbles span:nth-child(4){ left:64%; width:1.7vmax; height:1.7vmax; animation-delay:.3s; }
-      #liquidTransition .lt-bubbles span:nth-child(5){ left:79%; animation-delay:1.2s; }
-      @keyframes lt-rise{ 0%{opacity:0;transform:translateY(0) scale(.6)} 18%{opacity:.85} 100%{opacity:0;transform:translateY(-118vh) scale(1.05)} }
-
-      /* reduced motion: flat aqua cross-fade, no wobble/bubbles/flare/transform */
       @media (prefers-reduced-motion: reduce){
-        #liquidTransition .lt-sheet{
-          left:0; top:0; width:100%; height:100%; transform:none !important; filter:none;
-          -webkit-mask:none; mask:none; opacity:0; transition:opacity .25s linear;
+        #liquidTransition{
+          transition:opacity .2s ease; backdrop-filter:none !important; -webkit-backdrop-filter:none !important;
+          background:rgba(186,222,245,.5);
         }
-        #liquidTransition.lt-cover  .lt-sheet{ opacity:1; }
-        #liquidTransition.lt-reveal .lt-sheet{ opacity:0; }
-        #liquidTransition .lt-flare, #liquidTransition .lt-bubbles{ display:none; }
       }
     </style>
 
     <div id="gameSector" aria-hidden="true"></div>
-
-    <div id="liquidTransition" aria-hidden="true">
-      <div class="lt-sheet"></div>
-      <div class="lt-flare"></div>
-      <div class="lt-bubbles"><span></span><span></span><span></span><span></span><span></span></div>
-    </div>
-
-    <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
-      <defs>
-        <filter id="lt-liquid" x="-30%" y="-30%" width="160%" height="160%" color-interpolation-filters="sRGB">
-          <feTurbulence type="fractalNoise" baseFrequency="0.012 0.02" numOctaves="2" seed="7" stitchTiles="stitch" result="noise"/>
-          <feDisplacementMap in="SourceGraphic" in2="noise" xChannelSelector="R" yChannelSelector="G" scale="0">
-            <animate attributeName="scale" values="8;22;14;20;8" dur="1.3s" repeatCount="indefinite"
-                     calcMode="spline" keySplines="0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1"/>
-          </feDisplacementMap>
-        </filter>
-      </defs>
-    </svg>
+    <div id="liquidTransition" aria-hidden="true"></div>
 
     <div class="game-container">
         <!-- Background layers (back to front by DOM order) -->
@@ -5261,12 +5213,11 @@
             // resumeMenuMusic/showOffline/showOnline/rainActive directly.
             // ============================================================
             const GameSector = (function () {
-                const isReduced = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
                 const READY_TIMEOUT_MS = 8000;   // reveal anyway if 'bounceReady' is missed (back button still exits)
-                const MIN_HOLD_MS = 260;         // min aqua dwell after full cover
+                const MIN_HOLD_MS = 160;         // min blur-hold after blur-in
                 const SWAP_SETTLE_MS = 220;      // cap for the restored-submenu paint before reveal
-                const COVER_SAFETY_MS = 900;     // fallback if transitionend is missed
-                const REVEAL_SAFETY_MS = 950;
+                const COVER_SAFETY_MS = 700;     // fallback if transitionend is missed
+                const REVEAL_SAFETY_MS = 720;
 
                 let phase = 'idle';   // 'idle' | 'entering' | 'playing' | 'exiting'
                 let active = false, isOnline = false, frame = null;
@@ -5275,48 +5226,43 @@
 
                 const host = () => document.getElementById('gameSector');
                 const lt = document.getElementById('liquidTransition');
-                const sheet = lt ? lt.querySelector('.lt-sheet') : null;
-
-                function onSheetEnd(cb) {
-                    if (!sheet) { cb(); return; }
+                function onBlurEnd(cb) {
+                    if (!lt) { cb(); return; }
                     let done = false;
-                    const finish = () => { if (done) return; done = true; sheet.removeEventListener('transitionend', h); cb(); };
-                    const h = (e) => { if (e.target !== sheet) return; if (e.propertyName === 'transform' || e.propertyName === 'opacity') finish(); };
-                    sheet.addEventListener('transitionend', h);
+                    const finish = () => { if (done) return; done = true; lt.removeEventListener('transitionend', h); cb(); };
+                    const h = (e) => {
+                        if (e.target !== lt) return;
+                        if (e.propertyName === 'backdrop-filter' || e.propertyName === '-webkit-backdrop-filter' || e.propertyName === 'opacity') finish();
+                    };
+                    lt.addEventListener('transitionend', h);
                 }
                 function clearTimers() {
                     if (readyTimer) { clearTimeout(readyTimer); readyTimer = null; }
                     if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
                 }
-                function startCover(onCovered) {
+                // Ramp the frosted blur UP over whatever is behind (menu on enter, game on exit).
+                function blurIn(onCovered) {
                     covered = false;
                     if (!lt) { onCovered && onCovered(); return; }
-                    const reduced = isReduced();
-                    lt.classList.remove('lt-revealing', 'lt-reveal', 'lt-cover', 'lt-holding', 'lt-anim', 'lt-flash');
                     lt.classList.add('lt-on');
-                    if (!reduced) { void lt.offsetWidth; lt.classList.add('lt-flash'); setTimeout(() => lt.classList.remove('lt-flash'), 600); }
-                    void lt.offsetWidth;                       // reflow → start from off-left / opacity 0
-                    if (!reduced) lt.classList.add('lt-anim');
-                    requestAnimationFrame(() => { lt.classList.add('lt-cover'); });
+                    void lt.offsetWidth;                       // reflow so the transition runs from blur(0)
+                    requestAnimationFrame(() => { lt.classList.add('lt-blur'); });
                     let fired = false;
-                    const done = () => { if (fired) return; fired = true; covered = true; lt.classList.add('lt-holding'); onCovered && onCovered(); };
-                    onSheetEnd(done);
+                    const done = () => { if (fired) return; fired = true; covered = true; onCovered && onCovered(); };
+                    onBlurEnd(done);
                     setTimeout(done, COVER_SAFETY_MS);
                 }
-                function reveal(onDone) {
+                // Ramp the blur back DOWN, revealing what's behind, then hide the overlay.
+                function blurOut(onDone) {
                     if (!lt) { onDone && onDone(); return; }
-                    const reduced = isReduced();
-                    lt.classList.remove('lt-holding', 'lt-anim');
-                    if (!reduced) lt.classList.add('lt-revealing');
-                    void lt.offsetWidth;
-                    requestAnimationFrame(() => { lt.classList.remove('lt-cover'); lt.classList.add('lt-reveal'); });
+                    lt.classList.remove('lt-blur');
                     let fired = false;
                     const done = () => {
                         if (fired) return; fired = true;
-                        lt.classList.remove('lt-on', 'lt-anim', 'lt-revealing', 'lt-cover', 'lt-reveal', 'lt-holding');
+                        lt.classList.remove('lt-on');
                         covered = false; onDone && onDone();
                     };
-                    onSheetEnd(done);
+                    onBlurEnd(done);
                     setTimeout(done, REVEAL_SAFETY_MS);
                 }
                 function teardownFrame() {
@@ -5329,16 +5275,25 @@
                     requestAnimationFrame(renderRain);
                     if (ballTexturesLoaded) requestAnimationFrame(ballAnimationLoop);
                 }
+                // Tell the embedded engine it may boot now — only AFTER the blur-in is done,
+                // so the engine never starts until the transition has fully covered the screen.
+                function postStart() {
+                    try { if (frame && frame.contentWindow) frame.contentWindow.postMessage({ type: 'bounceStart' }, window.location.origin); } catch (e) { }
+                }
                 function maybeReveal() {
                     if (phase !== 'entering') return;
                     if (covered && ready && minHoldMet) {
                         phase = 'playing'; clearTimers();
-                        reveal(() => { try { if (frame) { frame.focus(); if (frame.contentWindow) frame.contentWindow.focus(); } } catch (e) { } });
+                        blurOut(() => { try { if (frame) { frame.focus(); if (frame.contentWindow) frame.contentWindow.focus(); } } catch (e) { } });
                     }
                 }
                 function onReady() { if (phase !== 'entering') return; ready = true; maybeReveal(); }
                 function onCoveredEnter() {
-                    if (phase === 'exiting') { doSwap(); return; }   // exit arrived before cover completed
+                    if (phase === 'exiting') { doSwap(); return; }   // exit arrived before blur-in completed
+                    // Screen is fully blurred now: swap the menu out for the game sector
+                    // (invisible under the blur) and only THEN let the engine boot.
+                    const h = host(); if (h) h.style.display = 'block';
+                    postStart();                                     // blur-in done → NOW the engine may boot
                     holdTimer = setTimeout(() => { minHoldMet = true; maybeReveal(); }, MIN_HOLD_MS);
                     maybeReveal();
                 }
@@ -5354,7 +5309,7 @@
                     let revealed = false;
                     const finish = () => {
                         if (revealed) return; revealed = true;
-                        reveal(() => { phase = 'idle'; });
+                        blurOut(() => { phase = 'idle'; });
                         pollVersion();                               // menu is long-lived now → re-check for updates
                     };
                     Promise.resolve(restored).then(finish);
@@ -5377,11 +5332,14 @@
                     frame.title = 'BouncEngine';
                     frame.setAttribute('allow', 'autoplay; fullscreen');
                     h.appendChild(frame);
-                    h.style.display = 'block';
+                    // NOTE: the host stays hidden until the blur is at full strength (see
+                    // onCoveredEnter). Otherwise the black sector would instantly cover the
+                    // menu and backdrop-filter would be blurring black instead of the menu.
+                    // The iframe still preloads the engine document while hidden.
                     frame.src = isOnline
                         ? ('/engine/?online=' + encodeURIComponent(opts.id))
                         : ('/engine/?level=' + encodeURIComponent(opts.id));
-                    startCover(onCoveredEnter);
+                    blurIn(onCoveredEnter);
                     clearTimers();
                     readyTimer = setTimeout(onReady, READY_TIMEOUT_MS);
                 }
@@ -5393,7 +5351,7 @@
                         return;
                     }
                     phase = 'exiting'; clearTimers();                // phase === 'playing'
-                    startCover(() => { doSwap(); });
+                    blurIn(() => { doSwap(); });
                 }
                 async function pollVersion() {
                     if (window.__sectorActive) return;
