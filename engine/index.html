@@ -7859,6 +7859,21 @@
             showLoadingScreen();
             _tryBoot();
         };
+        // The splash is decoration — it must never be able to block the game from booting.
+        // Without these, a 404/decode failure or a stalled request leaves the parent's
+        // transition parked at peak blur waiting for a level that never loads.
+        splashImage.onerror = function () {
+            console.warn('[Boot] Splash image failed to load — booting without it');
+            _splashLoaded = true;
+            _tryBoot();
+        };
+        setTimeout(function () {
+            if (!_splashLoaded) {
+                console.warn('[Boot] Splash image timed out — booting without it');
+                _splashLoaded = true;
+                _tryBoot();
+            }
+        }, 1500);
         window.addEventListener('message', function (e) {
             if (e.origin !== window.location.origin) return;
             if (e.data && e.data.type === 'bounceStart') {

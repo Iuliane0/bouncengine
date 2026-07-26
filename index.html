@@ -5262,14 +5262,23 @@
                 // the blur peaks we only wait out the remainder of the fade — not its whole
                 // duration. That's what keeps it one motion instead of blur→fade→unblur.
                 const MIN_HOLD_MS = Math.max(0, FADE_TOTAL_MS - BLUR_MS) + 20;   // ~55ms
-                const READY_TIMEOUT_MS = 8000;
+                // How long to keep re-sending the start signal before giving up (the engine
+                // may still be loading; one delivered signal is enough, it is consumed when
+                // the engine reaches its gate).
+                const START_RETRY_WINDOW_MS = 4000;
                 const COVER_SAFETY_MS = 300;     // fallback if transitionend is missed
                 const REVEAL_SAFETY_MS = 320;
 
                 let phase = 'idle';   // 'idle' | 'entering' | 'playing' | 'exiting'
                 let active = false, isOnline = false, frame = null;
                 let covered = false, preloaded = false, minHoldMet = false;
-                let readyTimer = null, holdTimer = null, pushedState = false, startRetry = null;
+                let holdTimer = null, pushedState = false, startRetry = null;
+                // Every launch/exit bumps this. Async callbacks captured from an older
+                // cycle must not act — otherwise a still-in-flight exit (its timers can be
+                // throttled for seconds in a background tab) reaches doSwap() and tears
+                // down the iframe belonging to the level the player just started, leaving
+                // the overlay stuck at peak blur over a sector that never reports in.
+                let gen = 0;
 
                 const host = () => document.getElementById('gameSector');
                 const lt = document.getElementById('liquidTransition');
@@ -5284,7 +5293,6 @@
                     lt.addEventListener('transitionend', h);
                 }
                 function clearTimers() {
-                    if (readyTimer) { clearTimeout(readyTimer); readyTimer = null; }
                     if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
                 }
                 // Ramp the frosted blur UP over whatever is behind (menu on enter, game on exit).
@@ -5319,7 +5327,7 @@
                     stopStartHandshake();
                     if (frame) { try { frame.src = 'about:blank'; } catch (e) { } try { frame.remove(); } catch (e) { } frame = null; }
                     // Reset to hidden AND transparent so the next launch cross-fades from 0.
-                    const h = host(); if (h) { h.classList.remove('gs-in'); h.style.opacity = ''; h.style.display = 'none'; }
+                    const h = host(); if (h) { h.classList.remove('gs-in'); h.style.opacity = ''; h.style.transition = ''; h.style.transitionDelay = ''; h.style.display = 'none'; }
                 }
                 // Restart the menu's rAF loops that were gated off by __sectorActive.
                 function restartMenuLoops() {
@@ -5341,14 +5349,20 @@
                     postStart();
                     stopStartHandshake();
                     startRetry = setInterval(postStart, 150);
-                    setTimeout(stopStartHandshake, READY_TIMEOUT_MS);
+                    setTimeout(stopStartHandshake, START_RETRY_WINDOW_MS);
                 }
                 function stopStartHandshake() {
                     if (startRetry) { clearInterval(startRetry); startRetry = null; }
                 }
                 function maybeReveal() {
                     if (phase !== 'entering') return;
-                    if (covered && preloaded && minHoldMet) {
+                    // NOTE: deliberately NOT gated on the engine being loaded. Holding the
+                    // blur at peak until the engine reports in made the transition's length
+                    // depend on load time — a cold cache or a heavier level looked exactly
+                    // like the transition had frozen. The engine paints its own splash while
+                    // it finishes, which is an honest loading state, so the transition now
+                    // always takes the same ~400ms and the game starts the moment it can.
+                    if (covered && minHoldMet) {
                         phase = 'playing'; clearTimers();
                         // Start the game exactly as the blur begins to lift, so almost no
                         // gameplay happens behind a screen the player can't read yet.
@@ -5365,31 +5379,43 @@
                     preloaded = true; maybeReveal();
                 }
                 function onReady() { stopStartHandshake(); }
-                function onCoveredEnter() {
-                    if (phase === 'exiting') { doSwap(); return; }   // exit arrived before blur-in completed
-                    holdTimer = setTimeout(() => { minHoldMet = true; maybeReveal(); }, MIN_HOLD_MS);
+                function onCoveredEnter(myGen) {
+                    if (myGen !== gen) return;                       // superseded by a newer cycle
+                    if (phase === 'exiting') { doSwap(myGen); return; }  // exit arrived before blur-in completed
+                    holdTimer = setTimeout(() => { if (myGen !== gen) return; minHoldMet = true; maybeReveal(); }, MIN_HOLD_MS);
                     maybeReveal();
                 }
-                function doSwap() {                                  // the blur has peaked
-                    // The menu was already rebuilt and the sector already started fading out
-                    // in exit(), both concurrently with the blur — so by now we only need to
-                    // drop the iframe and lift the blur.
+                function doSwap(myGen) {                             // the blur has peaked
+                    if (myGen !== gen) return;                       // a newer launch owns the sector now
+                    // Rebuild the menu HERE, under full blur, rather than at the start of the
+                    // exit: showOffline() re-inits progress and repaints the whole grid, and
+                    // that main-thread work would otherwise stutter the visible blur ramp.
+                    try { isOnline ? showOnline() : showOffline(); } catch (e) { }  // restores lastPackIndex
                     teardownFrame();
-                    blurOut(() => { phase = 'idle'; });
+                    blurOut(() => { if (myGen === gen) phase = 'idle'; });
                     pollVersion();                                   // menu is long-lived now → re-check for updates
                 }
-                // Rebuild the menu behind the still-visible sector and begin fading the
-                // sector out. Runs at the START of the exit blur so the two overlap.
-                function beginMenuRestore() {
+                // Hand ownership back to the menu and start fading the sector out. Cheap work
+                // only — runs at the START of the exit blur so the two overlap.
+                function releaseSectorOwnership() {
                     active = false; window.__sectorActive = false;   // menu owns audio/input/loops again
                     resumeMenuMusic();                               // re-ramps masterGain 0→1
                     try { rainActive = true; } catch (e) { }
                     restartMenuLoops();                              // revive rain+ball rAF loops
-                    try { isOnline ? showOnline() : showOffline(); } catch (e) { }  // restores lastPackIndex
-                    const h = host(); if (h) { h.style.opacity = ''; h.classList.remove('gs-in'); }
+                    const h = host();
+                    if (h) {
+                        // Restore the transition in case the entering guarantee disabled it,
+                        // then drop the delay: on the way out the fade should finish before
+                        // the blur peaks so teardown never has to wait for it.
+                        h.style.transition = '';
+                        h.style.transitionDelay = '0s';
+                        h.style.opacity = '';                        // clear the forced value so the class can drive it
+                        h.classList.remove('gs-in');
+                    }
                 }
                 function launch(opts) {
                     if (active) return;
+                    const myGen = ++gen;                             // invalidates any in-flight exit callbacks
                     active = true; window.__sectorActive = true;     // gates ALL menu audio/input/rAF paths
                     phase = 'entering'; isOnline = (opts.type === 'online');
                     covered = false; preloaded = false; minHoldMet = false;
@@ -5411,32 +5437,42 @@
                     // Show the sector transparent and start its cross-fade NOW — the CSS
                     // delay slots it just behind the blur so both motions overlap. (It must
                     // start at opacity 0, or backdrop-filter would be blurring black.)
+                    h.style.transition = '';                        // clear any forced-opacity override
+                    h.style.transitionDelay = '';                   // restore the entering offset
                     h.style.opacity = '';
                     h.style.display = 'block';
                     void h.offsetWidth;                              // reflow so the fade runs from 0
                     h.classList.add('gs-in');
-                    setTimeout(() => { const g = host(); if (g) g.classList.add('gs-in'); }, 16);
+                    setTimeout(() => { if (myGen !== gen) return; const g = host(); if (g) g.classList.add('gs-in'); }, 16);
                     // Guarantee the end state: a transition only advances while the page is
                     // compositing, so a level launched in a hidden tab would otherwise leave
                     // the sector permanently invisible.
-                    setTimeout(() => { const g = host(); if (g) g.style.opacity = '1'; }, FADE_TOTAL_MS + 120);
-                    blurIn(onCoveredEnter);
+                    setTimeout(() => {
+                        if (myGen !== gen) return;
+                        const g = host();
+                        if (g && +getComputedStyle(g).opacity < 1) {
+                            // Kill the transition before forcing the value: assigning opacity
+                            // alone would just start ANOTHER transition, which also cannot
+                            // advance on a page that isn't compositing.
+                            g.style.transition = 'none';
+                            g.style.opacity = '1';
+                        }
+                    }, FADE_TOTAL_MS + 120);
                     clearTimers();
-                    // Don't hang forever if the engine never reports in.
-                    readyTimer = setTimeout(() => { preloaded = true; maybeReveal(); }, READY_TIMEOUT_MS);
+                    blurIn(() => onCoveredEnter(myGen));
                 }
                 function exit() {
                     if (!active || phase === 'idle' || phase === 'exiting') return;
                     const wasEntering = (phase === 'entering');
+                    const myGen = ++gen;                             // invalidates the entering cycle's callbacks
                     phase = 'exiting'; clearTimers();
-                    beginMenuRestore();                              // rebuild menu + start fading the sector out
-                    if (wasEntering && covered) { doSwap(); return; }  // blur already up
-                    if (wasEntering) return;                         // onCoveredEnter() will doSwap()
-                    // Was playing: blur up over the game while the sector fades out beneath,
-                    // then tear down and lift the blur — same overlapped motion as entering.
-                    // The fade is delayed slightly behind the blur, so wait out its remainder
-                    // before tearing the frame down or we'd cut the fade short.
-                    blurIn(() => { setTimeout(doSwap, MIN_HOLD_MS); });
+                    releaseSectorOwnership();                        // hand back to the menu + start the fade-out
+                    if (wasEntering && covered) { doSwap(myGen); return; }  // blur already up
+                    if (wasEntering) { blurIn(() => onCoveredEnter(myGen)); return; }
+                    // Was playing: blur up over the game while the sector fades out beneath.
+                    // The fade has no delay on the way out and is shorter than the blur, so it
+                    // is already finished when the blur peaks — tear down immediately.
+                    blurIn(() => doSwap(myGen));
                 }
                 // The menu is long-lived now (it never unloads on level launch), so re-run
                 // the SAME guarded check used at boot — never a bespoke copy, or this path
