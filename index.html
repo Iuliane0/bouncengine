@@ -3512,7 +3512,10 @@
                 });
             }
 
-            async function showOffline() {
+            // deferActivate: build the screen but DON'T reveal it — returns an activator the
+            // caller fires later. Used when returning from a level so the UI blurs in with
+            // the tail of the sector transition instead of popping in beforehand.
+            async function showOffline(deferActivate) {
                 hideAllMenus();
                 rainActive = true;
                 rainCanvas.classList.add('active');
@@ -3527,11 +3530,17 @@
                 const savedPack = parseInt(sessionStorage.getItem('lastPackIndex'), 10);
                 goToPack(!isNaN(savedPack) && savedPack >= 0 && savedPack < LEVEL_PACKS.length ? savedPack : 0);
                 // Double rAF for smooth blur→unblur transition
-                requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                        offlineMenu.classList.add('active');
-                    });
-                });
+                const activate = () => {
+                    let done = false;
+                    const add = () => { if (done) return; done = true; offlineMenu.classList.add('active'); };
+                    // Double rAF lets layout settle so the blur-in actually animates; the
+                    // timeout is a backup because rAF never fires on a page that isn't
+                    // compositing (background tab), which would leave the menu invisible.
+                    requestAnimationFrame(() => requestAnimationFrame(add));
+                    setTimeout(add, 48);
+                };
+                if (deferActivate) return activate;
+                activate();
             }
 
             // ========== ONLINE LEVELS ==========
@@ -3682,7 +3691,8 @@
                 GameSector.launch({ type: 'online', id: id });
             }
 
-            function showOnline() {
+            // deferActivate: see showOffline — returns an activator instead of revealing now.
+            function showOnline(deferActivate) {
                 hideAllMenus();
                 rainActive = true;
                 rainCanvas.classList.add('active');
@@ -3695,11 +3705,14 @@
                 onlinePage = 1;
                 loadOnlineLevels();
                 // Double rAF for smooth blur→unblur transition
-                requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                        onlineMenu.classList.add('active');
-                    });
-                });
+                const activate = () => {
+                    let done = false;
+                    const add = () => { if (done) return; done = true; onlineMenu.classList.add('active'); };
+                    requestAnimationFrame(() => requestAnimationFrame(add));
+                    setTimeout(add, 48);   // rAF backup — see showOffline
+                };
+                if (deferActivate) return activate;
+                activate();
             }
 
             function goToBouncEditor() {
@@ -5367,6 +5380,10 @@
                         // Start the game exactly as the blur begins to lift, so almost no
                         // gameplay happens behind a screen the player can't read yet.
                         beginStartHandshake();
+                        // Deactivate the menu screens now that the sector fully covers them.
+                        // Invisible at this moment, and it means the return trip reveals an
+                        // empty backdrop instead of the old UI sitting there fully rendered.
+                        try { hideAllMenus(); } catch (e) { }
                         blurOut(() => { try { if (frame) { frame.focus(); if (frame.contentWindow) frame.contentWindow.focus(); } } catch (e) { } });
                     }
                 }
@@ -5390,9 +5407,24 @@
                     // Rebuild the menu HERE, under full blur, rather than at the start of the
                     // exit: showOffline() re-inits progress and repaints the whole grid, and
                     // that main-thread work would otherwise stutter the visible blur ramp.
-                    try { isOnline ? showOnline() : showOffline(); } catch (e) { }  // restores lastPackIndex
+                    // Built but NOT revealed (deferActivate) — the UI must not already be
+                    // sitting there when the sector fades away, or it visibly pops in, fades
+                    // out and fades back in. We fire the activator as the screen unblurs so
+                    // the UI blurs in on the tail of the transition, with its own 0.3s curve.
+                    let activateMenu = null, blurLifting = false;
+                    const revealUi = () => {
+                        if (!activateMenu || !blurLifting || myGen !== gen) return;
+                        const fn = activateMenu; activateMenu = null; fn();
+                    };
+                    try {
+                        Promise.resolve(isOnline ? showOnline(true) : showOffline(true))
+                            .then(fn => { activateMenu = fn; revealUi(); })
+                            .catch(() => { });
+                    } catch (e) { }
                     teardownFrame();
+                    blurLifting = true;
                     blurOut(() => { if (myGen === gen) phase = 'idle'; });
+                    revealUi();
                     pollVersion();                                   // menu is long-lived now → re-check for updates
                 }
                 // Hand ownership back to the menu and start fading the sector out. Cheap work
