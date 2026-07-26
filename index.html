@@ -1760,7 +1760,9 @@
          blended image — no hard cut for the blur to fail to hide. */
       #gameSector{
         position:fixed; inset:0; z-index:900; display:none; background:#000; overflow:hidden;
-        opacity:0; transition:opacity 150ms cubic-bezier(.4,0,.25,1); will-change:opacity;
+        /* Sine ease-in-out, and it starts slightly AFTER the blur so the two motions
+           overlap instead of running one after the other. */
+        opacity:0; transition:opacity 150ms cubic-bezier(.37,0,.63,1) 55ms; will-change:opacity;
       }
       #gameSector.gs-in{ opacity:1; }
       #gameSector iframe{ position:absolute; inset:0; width:100%; height:100%; border:0; margin:0; padding:0; display:block; background:#000; }
@@ -1775,9 +1777,11 @@
                 backdrop-filter:blur(0px) saturate(135%);
         /* opacity and blur share a duration so they land together — otherwise the
            shorter one ends first and the sequence steps instead of gliding. */
-        transition:opacity 170ms cubic-bezier(.33,0,.18,1),
-                   backdrop-filter 170ms cubic-bezier(.33,0,.18,1),
-                   -webkit-backdrop-filter 170ms cubic-bezier(.33,0,.18,1);
+        /* Sine ease-in-out (cubic-bezier(.37,0,.63,1)) — starts and ends gently with no
+           linear ramp, so the swell reads as one continuous motion. */
+        transition:opacity 170ms cubic-bezier(.37,0,.63,1),
+                   backdrop-filter 170ms cubic-bezier(.37,0,.63,1),
+                   -webkit-backdrop-filter 170ms cubic-bezier(.37,0,.63,1);
         will-change:backdrop-filter, opacity;
       }
       #liquidTransition.lt-on{ display:block; }
@@ -5250,16 +5254,21 @@
             // resumeMenuMusic/showOffline/showOnline/rainActive directly.
             // ============================================================
             const GameSector = (function () {
-                const READY_TIMEOUT_MS = 8000;   // reveal anyway if 'bounceReady' is missed (back button still exits)
-                const CROSSFADE_MS = 150;        // must match #gameSector's opacity transition
-                const MIN_HOLD_MS = 170;         // >= CROSSFADE_MS, or we'd reveal a half-faded sector
-                const SWAP_SETTLE_MS = 160;      // cap for the restored-submenu paint before fading back
-                const COVER_SAFETY_MS = 300;     // fallback if transitionend is missed (blur is 170ms)
+                const BLUR_MS = 170;             // must match #liquidTransition's transition
+                const FADE_DELAY_MS = 55;        // must match #gameSector's transition-delay
+                const FADE_MS = 150;             // must match #gameSector's opacity transition
+                const FADE_TOTAL_MS = FADE_DELAY_MS + FADE_MS;   // 205ms from launch
+                // The cross-fade runs CONCURRENTLY with the blur (just behind it), so after
+                // the blur peaks we only wait out the remainder of the fade — not its whole
+                // duration. That's what keeps it one motion instead of blur→fade→unblur.
+                const MIN_HOLD_MS = Math.max(0, FADE_TOTAL_MS - BLUR_MS) + 20;   // ~55ms
+                const READY_TIMEOUT_MS = 8000;
+                const COVER_SAFETY_MS = 300;     // fallback if transitionend is missed
                 const REVEAL_SAFETY_MS = 320;
 
                 let phase = 'idle';   // 'idle' | 'entering' | 'playing' | 'exiting'
                 let active = false, isOnline = false, frame = null;
-                let covered = false, ready = false, minHoldMet = false;
+                let covered = false, preloaded = false, minHoldMet = false;
                 let readyTimer = null, holdTimer = null, pushedState = false, startRetry = null;
 
                 const host = () => document.getElementById('gameSector');
@@ -5339,64 +5348,51 @@
                 }
                 function maybeReveal() {
                     if (phase !== 'entering') return;
-                    if (covered && ready && minHoldMet) {
+                    if (covered && preloaded && minHoldMet) {
                         phase = 'playing'; clearTimers();
+                        // Start the game exactly as the blur begins to lift, so almost no
+                        // gameplay happens behind a screen the player can't read yet.
+                        beginStartHandshake();
                         blurOut(() => { try { if (frame) { frame.focus(); if (frame.contentWindow) frame.contentWindow.focus(); } } catch (e) { } });
                     }
                 }
-                function onReady() { stopStartHandshake(); if (phase !== 'entering') return; ready = true; maybeReveal(); }
+                // Engine finished LOADING (it is not running yet — it waits on our signal).
+                function onPreloaded() {
+                    // Already playing means the engine reloaded itself in place (restart /
+                    // full reset). Its gate is fresh and nobody is going to open it but us.
+                    if (phase === 'playing') { beginStartHandshake(); return; }
+                    if (phase !== 'entering') return;
+                    preloaded = true; maybeReveal();
+                }
+                function onReady() { stopStartHandshake(); }
                 function onCoveredEnter() {
                     if (phase === 'exiting') { doSwap(); return; }   // exit arrived before blur-in completed
-                    // Screen is at peak blur: CROSS-FADE the sector in over the menu rather
-                    // than switching it on. An instant swap is a hard cut in the backdrop
-                    // that the blur cannot hide — it just blurs the cut.
-                    const h = host();
-                    if (h) {
-                        h.style.opacity = '';                        // class drives the fade
-                        h.style.display = 'block';
-                        void h.offsetWidth;                          // reflow so the fade actually runs
-                        h.classList.add('gs-in');
-                        setTimeout(() => h.classList.add('gs-in'), 16);  // backup if the reflow was coalesced
-                        // GUARANTEE the end state. A transition only advances while the page
-                        // is compositing; if the tab was hidden when the level launched, the
-                        // fade would never progress and the game would stay invisible.
-                        setTimeout(() => { if (host()) host().style.opacity = '1'; }, CROSSFADE_MS + 120);
-                    }
-                    beginStartHandshake();                           // blur-in done → NOW the engine may boot
                     holdTimer = setTimeout(() => { minHoldMet = true; maybeReveal(); }, MIN_HOLD_MS);
                     maybeReveal();
                 }
-                function doSwap() {                                  // runs at peak blur
-                    active = false; window.__sectorActive = false;   // 1) menu owns audio/input/loops again
-                    resumeMenuMusic();                               // 2) restore menu track (re-ramps masterGain 0→1)
+                function doSwap() {                                  // the blur has peaked
+                    // The menu was already rebuilt and the sector already started fading out
+                    // in exit(), both concurrently with the blur — so by now we only need to
+                    // drop the iframe and lift the blur.
+                    teardownFrame();
+                    blurOut(() => { phase = 'idle'; });
+                    pollVersion();                                   // menu is long-lived now → re-check for updates
+                }
+                // Rebuild the menu behind the still-visible sector and begin fading the
+                // sector out. Runs at the START of the exit blur so the two overlap.
+                function beginMenuRestore() {
+                    active = false; window.__sectorActive = false;   // menu owns audio/input/loops again
+                    resumeMenuMusic();                               // re-ramps masterGain 0→1
                     try { rainActive = true; } catch (e) { }
-                    restartMenuLoops();                              // 3) revive rain+ball rAF loops
-                    // 4) rebuild the menu underneath while the sector is still opaque
-                    const restored = isOnline
-                        ? (function () { try { return showOnline(); } catch (e) { } })()
-                        : (function () { try { return showOffline(); } catch (e) { } })();  // rebuilds grid from lastPackIndex
-                    let faded = false;
-                    // 5) cross-fade the sector back OUT to the restored menu (same reason as
-                    //    the way in — tearing the frame down instantly is a hard cut), then
-                    //    drop the iframe and lift the blur.
-                    const fadeOutAndFinish = () => {
-                        if (faded) return; faded = true;
-                        // clear the inline guarantee first so removing the class can drive it to 0
-                        const h = host(); if (h) { h.style.opacity = ''; h.classList.remove('gs-in'); }
-                        setTimeout(() => {
-                            teardownFrame();                         // now transparent → safe to remove
-                            blurOut(() => { phase = 'idle'; });
-                            pollVersion();                           // menu is long-lived now → re-check for updates
-                        }, CROSSFADE_MS);
-                    };
-                    Promise.resolve(restored).then(fadeOutAndFinish);
-                    setTimeout(fadeOutAndFinish, SWAP_SETTLE_MS);    // safety cap so a slow init still proceeds
+                    restartMenuLoops();                              // revive rain+ball rAF loops
+                    try { isOnline ? showOnline() : showOffline(); } catch (e) { }  // restores lastPackIndex
+                    const h = host(); if (h) { h.style.opacity = ''; h.classList.remove('gs-in'); }
                 }
                 function launch(opts) {
                     if (active) return;
                     active = true; window.__sectorActive = true;     // gates ALL menu audio/input/rAF paths
                     phase = 'entering'; isOnline = (opts.type === 'online');
-                    covered = false; ready = false; minHoldMet = false;
+                    covered = false; preloaded = false; minHoldMet = false;
                     try { localStorage.setItem('audioInteraction', Date.now().toString()); } catch (e) { }
                     // History entry so hardware/browser Back exits the level (not the site),
                     // and a reload restores the right submenu.
@@ -5409,26 +5405,38 @@
                     frame.title = 'BouncEngine';
                     frame.setAttribute('allow', 'autoplay; fullscreen');
                     h.appendChild(frame);
-                    // NOTE: the host stays hidden until the blur is at full strength (see
-                    // onCoveredEnter). Otherwise the black sector would instantly cover the
-                    // menu and backdrop-filter would be blurring black instead of the menu.
-                    // The iframe still preloads the engine document while hidden.
                     frame.src = isOnline
                         ? ('/engine/?online=' + encodeURIComponent(opts.id))
                         : ('/engine/?level=' + encodeURIComponent(opts.id));
+                    // Show the sector transparent and start its cross-fade NOW — the CSS
+                    // delay slots it just behind the blur so both motions overlap. (It must
+                    // start at opacity 0, or backdrop-filter would be blurring black.)
+                    h.style.opacity = '';
+                    h.style.display = 'block';
+                    void h.offsetWidth;                              // reflow so the fade runs from 0
+                    h.classList.add('gs-in');
+                    setTimeout(() => { const g = host(); if (g) g.classList.add('gs-in'); }, 16);
+                    // Guarantee the end state: a transition only advances while the page is
+                    // compositing, so a level launched in a hidden tab would otherwise leave
+                    // the sector permanently invisible.
+                    setTimeout(() => { const g = host(); if (g) g.style.opacity = '1'; }, FADE_TOTAL_MS + 120);
                     blurIn(onCoveredEnter);
                     clearTimers();
-                    readyTimer = setTimeout(onReady, READY_TIMEOUT_MS);
+                    // Don't hang forever if the engine never reports in.
+                    readyTimer = setTimeout(() => { preloaded = true; maybeReveal(); }, READY_TIMEOUT_MS);
                 }
                 function exit() {
                     if (!active || phase === 'idle' || phase === 'exiting') return;
-                    if (phase === 'entering') {
-                        phase = 'exiting'; clearTimers();
-                        if (covered) doSwap();                       // else onCoveredEnter() runs doSwap when cover completes
-                        return;
-                    }
-                    phase = 'exiting'; clearTimers();                // phase === 'playing'
-                    blurIn(() => { doSwap(); });
+                    const wasEntering = (phase === 'entering');
+                    phase = 'exiting'; clearTimers();
+                    beginMenuRestore();                              // rebuild menu + start fading the sector out
+                    if (wasEntering && covered) { doSwap(); return; }  // blur already up
+                    if (wasEntering) return;                         // onCoveredEnter() will doSwap()
+                    // Was playing: blur up over the game while the sector fades out beneath,
+                    // then tear down and lift the blur — same overlapped motion as entering.
+                    // The fade is delayed slightly behind the blur, so wait out its remainder
+                    // before tearing the frame down or we'd cut the fade short.
+                    blurIn(() => { setTimeout(doSwap, MIN_HOLD_MS); });
                 }
                 // The menu is long-lived now (it never unloads on level launch), so re-run
                 // the SAME guarded check used at boot — never a bespoke copy, or this path
@@ -5443,7 +5451,8 @@
                     if (e.origin !== window.location.origin) return;
                     if (!frame || e.source !== frame.contentWindow) return;
                     const d = e.data || {};
-                    if (d.type === 'bounceReady') { onReady(); }
+                    if (d.type === 'bouncePreloaded') { onPreloaded(); }
+                    else if (d.type === 'bounceReady') { onReady(); }
                     else if (d.type === 'bounceExit') {
                         if (typeof d.online === 'boolean') isOnline = d.online;
                         exit();

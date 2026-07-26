@@ -4393,12 +4393,24 @@
             return null;
         }
 
-        // Load an online level from the API
-        async function loadOnlineLevel(onlineId) {
-            console.log('Fetching online level ' + onlineId + ' from API...');
-            const res = await fetch('/api/levels/' + onlineId);
-            if (!res.ok) throw new Error('Failed to fetch online level ' + onlineId);
-            const level = await res.json();
+        // Cached copy of the online level so an in-place reset (speedrun R) can rebuild
+        // it without another network round trip.
+        let _onlineLevelData = null;
+        let _onlineLevelId = 0;
+
+        // Load an online level from the API. Pass `cached` to re-apply an already
+        // fetched level; with it there is no await, so the whole body runs
+        // synchronously and it is safe to call from a keydown handler.
+        async function loadOnlineLevel(onlineId, cached) {
+            let level = cached;
+            if (!level) {
+                console.log('Fetching online level ' + onlineId + ' from API...');
+                const res = await fetch('/api/levels/' + onlineId);
+                if (!res.ok) throw new Error('Failed to fetch online level ' + onlineId);
+                level = await res.json();
+            }
+            _onlineLevelData = level;
+            _onlineLevelId = onlineId;
             const data = level.level_data;
 
             console.log('Loading online level: ' + level.name);
@@ -4764,13 +4776,21 @@
         // Resets map, gameplay, timer, and shows splash if textures need time
         function speedrunFastReset() {
             if (!_sr.isEnabled()) return;
-            if (_currentLevelNum <= 0) return;
 
-            // Show splash screen while resetting
-            showLoadingScreen();
-
-            // Reload the level data (tiles, spiders, rings, door, spawn)
-            loadClassicLevel(_currentLevelNum);
+            // Rebuild the level in place. Classic levels come from levels.js; online
+            // levels are rebuilt from the copy cached at first load (they carry
+            // _currentLevelNum === 0, which used to make this bail out entirely — so R
+            // silently did nothing on community levels).
+            if (_isOnlineLevel) {
+                if (!_onlineLevelData) return;
+                showLoadingScreen();
+                loadOnlineLevel(_onlineLevelId, _onlineLevelData);
+            } else if (_currentLevelNum > 0) {
+                showLoadingScreen();
+                loadClassicLevel(_currentLevelNum);
+            } else {
+                return;
+            }
 
             // Reset all gameplay state
             // Use internal variables directly since we're outside the game loop
@@ -7785,6 +7805,12 @@
             prewarmTileCache();
 
             // ---- everything above is LOADING and runs during the parent's transition ----
+            // Announce that loading is finished. The parent uses this to time the reveal,
+            // and — crucially — to re-open the gate after an in-page reload (restartLevel /
+            // fullLevelReset call location.reload(), which builds a FRESH gate that would
+            // otherwise wait forever for a bounceStart the parent already sent once).
+            if (_sectorEmbedded) { _postToParent({ type: 'bouncePreloaded' }); }
+
             // Wait for the screen to be covered before the game actually starts, so no
             // gameplay (or speedrun time) elapses while the player still can't see it.
             await _startGate;
