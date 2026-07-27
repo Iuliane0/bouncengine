@@ -5286,6 +5286,7 @@
                 let active = false, isOnline = false, frame = null;
                 let covered = false, preloaded = false, minHoldMet = false;
                 let holdTimer = null, pushedState = false, startRetry = null;
+                let pendingRebuild = null;      // in-flight menu rebuild for the current exit
                 // Every launch/exit bumps this. Async callbacks captured from an older
                 // cycle must not act — otherwise a still-in-flight exit (its timers can be
                 // throttled for seconds in a background tab) reaches doSwap() and tears
@@ -5402,32 +5403,54 @@
                     holdTimer = setTimeout(() => { if (myGen !== gen) return; minHoldMet = true; maybeReveal(); }, MIN_HOLD_MS);
                     maybeReveal();
                 }
+                // Rebuild the menu we are returning to. Started at the very BEGINNING of the
+                // exit, concurrently with the blur going up — never while it is coming down.
+                // The target .menu-screen is still inactive (visibility:hidden) so repainting
+                // its contents is invisible, but the work itself is heavy (LevelProgress
+                // re-init runs HMAC-SHA256, then the entire level grid is rebuilt) and it
+                // blocks the main thread. Doing that while backdrop-filter is animating drops
+                // frames: the blur stalls and then snaps to catch up, which is exactly the
+                // "sudden acceleration" on the way out. Built but NOT revealed — the
+                // activator is fired later so the UI blurs in on the transition's tail.
+                function startMenuRebuild(myGen) {
+                    try {
+                        return Promise.resolve(isOnline ? showOnline(true) : showOffline(true))
+                            .then(fn => (myGen === gen && typeof fn === 'function') ? fn : null)
+                            .catch(() => null);
+                    } catch (e) { return Promise.resolve(null); }
+                }
                 function doSwap(myGen) {                             // the blur has peaked
                     if (myGen !== gen) return;                       // a newer launch owns the sector now
-                    // Rebuild the menu HERE, under full blur, rather than at the start of the
-                    // exit: showOffline() re-inits progress and repaints the whole grid, and
-                    // that main-thread work would otherwise stutter the visible blur ramp.
-                    // Built but NOT revealed (deferActivate) — the UI must not already be
-                    // sitting there when the sector fades away, or it visibly pops in, fades
-                    // out and fades back in. We fire the activator as the screen unblurs so
-                    // the UI blurs in on the tail of the transition, with its own 0.3s curve.
-                    // Start clearing FIRST. Anything done before this (a menu rebuild, tearing
-                    // down a 350KB iframe) delays the blur from starting to lift and reads as
-                    // a hold at peak.
-                    blurOut(() => { if (myGen === gen) phase = 'idle'; });
-                    // Rebuild + reveal the menu underneath while the blur lifts. We are at peak
-                    // here, so the UI blurs in under the blur and is well along by the time the
-                    // screen is clear.
-                    try {
-                        Promise.resolve(isOnline ? showOnline(true) : showOffline(true))
-                            .then(fn => { if (myGen === gen && typeof fn === 'function') fn(); })
-                            .catch(() => { });
-                    } catch (e) { }
-                    // Drop the iframe only after the blur is under way — it is already fully
-                    // transparent, so removing it late is invisible but removing it early
-                    // stalls the ramp.
-                    setTimeout(() => { if (myGen === gen) teardownFrame(); }, 0);
-                    pollVersion();                                   // menu is long-lived now → re-check for updates
+                    let started = false;
+                    const start = () => {
+                        if (started || myGen !== gen) return; started = true;
+                        blurOut(() => {
+                            if (myGen !== gen) return;
+                            phase = 'idle';
+                            // Destroy the iframe only AFTER the blur has finished clearing.
+                            // Tearing down a ~350KB document (its JS heap, AudioContext and
+                            // canvas) is a heavyweight main-thread operation; doing it while
+                            // backdrop-filter is animating drops frames, so the clear stalls
+                            // and then snaps — the "sudden acceleration". The sector is fully
+                            // transparent by now, so paying that cost here costs nothing
+                            // visually, and the ramp runs on a quiet main thread.
+                            teardownFrame();
+                            pollVersion();                           // long-lived menu → re-check for updates
+                        });
+                    };
+                    if (pendingRebuild) {
+                        // Wait for the rebuild so the DOM is settled before the blur clears —
+                        // it was kicked off at exit start, so by now it is normally done and
+                        // this resolves on the spot.
+                        pendingRebuild.then(activator => {
+                            if (myGen !== gen) return;
+                            if (typeof activator === 'function') activator();   // UI blurs in
+                            start();
+                        });
+                        setTimeout(start, 150);                      // never stall on a slow rebuild
+                    } else {
+                        start();
+                    }
                 }
                 // Hand ownership back to the menu and start fading the sector out. Cheap work
                 // only — runs at the START of the exit blur so the two overlap.
@@ -5453,6 +5476,7 @@
                     active = true; window.__sectorActive = true;     // gates ALL menu audio/input/rAF paths
                     phase = 'entering'; isOnline = (opts.type === 'online');
                     covered = false; preloaded = false; minHoldMet = false;
+                    pendingRebuild = null;                           // stale exit's rebuild is irrelevant now
                     try { localStorage.setItem('audioInteraction', Date.now().toString()); } catch (e) { }
                     // History entry so hardware/browser Back exits the level (not the site),
                     // and a reload restores the right submenu.
@@ -5460,6 +5484,12 @@
                     suspendMenuMusic();
                     try { rainActive = false; } catch (e) { }
                     const h = host();
+                    // Teardown is deferred until after the exit transition, so a fast
+                    // re-entry can arrive first — and its gen bump makes that pending
+                    // teardown a no-op. Clear any leftover frame here or it leaks.
+                    try {
+                        h.querySelectorAll('iframe').forEach(el => { try { el.src = 'about:blank'; } catch (e) { } el.remove(); });
+                    } catch (e) { }
                     frame = document.createElement('iframe');
                     frame.id = 'gameSectorFrame';
                     frame.title = 'BouncEngine';
@@ -5501,6 +5531,9 @@
                     const myGen = ++gen;                             // invalidates the entering cycle's callbacks
                     phase = 'exiting'; clearTimers();
                     releaseSectorOwnership();                        // hand back to the menu + start the fade-out
+                    // Rebuild the menu NOW, while the blur is going UP and the target screen
+                    // is still hidden — so the DOM is settled by the time the blur clears.
+                    pendingRebuild = startMenuRebuild(myGen);
                     if (wasEntering && covered) { doSwap(myGen); return; }  // blur already up
                     if (wasEntering) { blurIn(() => onCoveredEnter(myGen)); return; }
                     // Was playing: blur up over the game while the sector fades out beneath,
