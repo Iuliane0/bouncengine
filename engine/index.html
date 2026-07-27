@@ -4736,6 +4736,17 @@
         // Death function - exact e() method from f.class
         function killBall() {
             if (z !== 0) return; // Already dead
+            // DIAGNOSTIC: capture why. window.__lastPop explains the pop after the fact —
+            // which pixel of the ball met which pixel of which tile, and whether the ball
+            // was actually there or only being probed.
+            try {
+                const h = window.__lastHit || null;
+                window.__lastPop = {
+                    ballNow: [s, r], ballEdgesX: [s - p, s + p - 1], vel: [l, o], size: a,
+                    cause: h
+                };
+                console.log('[POP]', JSON.stringify(window.__lastPop));
+            } catch (e) { }
             q = 7;      // Death timer
             z = 2;      // Dead state
             deathX = s; // Store death position
@@ -5079,6 +5090,24 @@
                     if (maskY >= 0 && maskY < a && maskX >= 0 && maskX < a) {
                         if (var15 >= 0 && var15 < 12 && var14 >= 0 && var14 < 12) {
                             if ((mask[var15][var14] & ballMask[maskY][maskX]) !== 0) {
+                                // DIAGNOSTIC: remember exactly what touched what, so a pop
+                                // can be explained after the fact (see window.__lastPop).
+                                try {
+                                    let mF = 99, mL = -1;
+                                    for (let my = 0; my < 12; my++) for (let mx = 0; mx < 12; mx++)
+                                        if (mask[my][mx]) { if (mx < mF) mF = mx; if (mx > mL) mL = mx; }
+                                    window.__lastHit = {
+                                        probing: _probing > 0,
+                                        ballCentre: [var1, var2],
+                                        ballEdgesX: [var1 - p, var1 + p - 1],
+                                        ballEdgesY: [var2 - p, var2 + p - 1],
+                                        tile: [var3, var4],
+                                        tileType: getTile(var3, var4) & ~WATER_FLAG & 255,
+                                        maskPxX: [var4 * 12 + mF, var4 * 12 + mL],
+                                        hitBallPx: [var1 - p + maskX, var2 - p + maskY],
+                                        hitTilePx: [var4 * 12 + var14, var3 * 12 + var15]
+                                    };
+                                } catch (e) { }
                                 return true;
                             }
                         }
