@@ -11,4 +11,4 @@
  *
  * Bump the string below to ship an update. Nothing else needs to change.
  */
-self.APP_VERSION = 'v1.1.1';
+self.APP_VERSION = 'v1.2.0';

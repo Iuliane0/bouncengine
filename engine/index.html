@@ -4693,20 +4693,22 @@
 
             while (!found) {
                 found = true;
-                if (canMove(s, r - dist)) {
+                // Silent probes — this is a search for a free spot, so the positions we
+                // reject must not collect rings, fire devices or kill the ball.
+                if (probeMove(s, r - dist)) {
                     r -= dist;
-                } else if (canMove(s - dist, r - dist)) {
+                } else if (probeMove(s - dist, r - dist)) {
                     s -= dist;
                     r -= dist;
-                } else if (canMove(s + dist, r - dist)) {
+                } else if (probeMove(s + dist, r - dist)) {
                     s += dist;
                     r -= dist;
-                } else if (canMove(s, r + dist)) {
+                } else if (probeMove(s, r + dist)) {
                     r += dist;
-                } else if (canMove(s - dist, r + dist)) {
+                } else if (probeMove(s - dist, r + dist)) {
                     s -= dist;
                     r += dist;
-                } else if (canMove(s + dist, r + dist)) {
+                } else if (probeMove(s + dist, r + dist)) {
                     s += dist;
                     r += dist;
                 } else {
@@ -4891,8 +4893,10 @@
         // Safe ejection mechanism - pushes ball out of any overlapping solids
         // without adding velocity. Tries all directions to find the shortest path out.
         function ejectFromSolids() {
-            // If ball can already move freely, no ejection needed
-            if (canMove(s, r)) return;
+            // Every check in here is a search for a free spot, so they are all SILENT
+            // probes — the candidate positions we reject must not collect rings, fire
+            // devices or kill the ball.
+            if (probeMove(s, r)) return;
 
             const MAX_EJECT = 24;  // Maximum pixels to eject (2 tiles worth)
 
@@ -4919,7 +4923,7 @@
                         break;  // Out of bounds, try next direction
                     }
 
-                    if (canMove(testX, testY)) {
+                    if (probeMove(testX, testY)) {
                         // Found a clear spot in this direction
                         if (dist < bestDist) {
                             bestDist = dist;
@@ -4948,7 +4952,7 @@
                         break;
                     }
 
-                    if (canMove(testX, testY)) {
+                    if (probeMove(testX, testY)) {
                         // Diagonal distance is sqrt(2)*dist, but we compare fairly
                         // by using actual pixel distance
                         const actualDist = Math.ceil(dist * 1.414);  // Approximate diagonal
@@ -4980,7 +4984,7 @@
                             const testY = r + dy;
                             if (testX >= p && testX <= COLS * 12 - p &&
                                 testY >= p && testY <= ROWS * 12 - p &&
-                                canMove(testX, testY)) {
+                                probeMove(testX, testY)) {
                                 s = testX;
                                 r = testY;
                                 console.log('[Eject] Emergency eject to (' + testX + ',' + testY + ')');
@@ -5414,7 +5418,7 @@
                     const candleRot = var7 - 3;
                     if (collidesWithMask(var1, var2, var3, var4, candleMasks[candleRot])) {
                         var5 = false;
-                        killBall();
+                        if (canInteract()) killBall();
                     }
                     break;
 
@@ -5432,6 +5436,7 @@
                                 fullLevelReset();
                                 return false;
                             }
+                            if (!canInteract()) break;   // probing a candidate: don't complete the level
                             // Door is open - trigger level complete!
                             playSoundUp();  // Play pickup sound for level complete
                             // Add 5000 point bonus for completing the level
@@ -5490,7 +5495,7 @@
                         var5 = false;  // Make it solid
                         u = true;  // Enable corner rolling
                         // Activate speed boost for 300 frames (with anti-cheat authorization)
-                        if (_ac.validateDeviceActivation('speed', var1, var2, a)) {
+                        if (canInteract() && _ac.validateDeviceActivation('speed', var1, var2, a)) {
                             _ac.authorizeSpeedBoost();  // Authorize BEFORE setting
                             h = 300;
                             playSoundUp();  // Play pickup sound
@@ -5505,7 +5510,7 @@
                     if (collidesBallWithTile(var1, var2, var3, var4)) {
                         var5 = false;
                         u = true;  // Enable corner rolling
-                        if (a === 16) {
+                        if (canInteract() && a === 16) {
                             deflateBall(true); // Bypass AC - already validated by collision
                         }
                     }
@@ -5519,14 +5524,14 @@
                     if (collidesWithMask(var1, var2, var3, var4, pumpMasks[infRot])) {
                         var5 = false;
                         u = true;  // Enable corner rolling
-                        if (a === 12) {
+                        if (canInteract() && a === 12) {
                             inflateBall(true); // Bypass AC - already validated by collision
                         }
                     }
                     break;
                 // Checkpoint uncollected (7) - non-solid, becomes collected on contact
                 case 7:
-                    if (collidesWithMask(var1, var2, var3, var4, checkpointMask)) {
+                    if (canInteract() && collidesWithMask(var1, var2, var3, var4, checkpointMask)) {
                         // Clear the OLD collected checkpoint (make it disappear forever)
                         if (spawnCellRow >= 0 && spawnCellCol >= 0) {
                             const oldWater = getTile(spawnCellRow, spawnCellCol) & WATER_FLAG;
@@ -5558,7 +5563,7 @@
                 // Life pickup (29 = classic, 55 = modern) - non-solid, disappears on contact
                 case 29:
                 case 55:
-                    if (collidesWithMask(var1, var2, var3, var4, e)) {  // Uses small ball mask
+                    if (canInteract() && collidesWithMask(var1, var2, var3, var4, e)) {  // Uses small ball mask
                         // Remove the life pickup (preserve water flag)
                         const water = getTile(var3, var4) & WATER_FLAG;
                         setTile(var3, var4, water);
@@ -5581,7 +5586,7 @@
                         var5 = false;  // Make it solid
                         u = true;  // Enable corner rolling
                         // Activate gravity reversal for 300 frames (with anti-cheat authorization)
-                        if (_ac.validateDeviceActivation('gravity', var1, var2, a)) {
+                        if (canInteract() && _ac.validateDeviceActivation('gravity', var1, var2, a)) {
                             _ac.authorizeGravityReversal();  // Authorize BEFORE setting
                             // Clear ground flag when gravity first reverses to prevent sticking
                             if (g === 0) {
@@ -5603,7 +5608,7 @@
                         var5 = false;  // Make it solid
                         u = true;  // Enable corner rolling
                         // Activate jump boost for 300 frames (with anti-cheat authorization)
-                        if (_ac.validateDeviceActivation('jump', var1, var2, a)) {
+                        if (canInteract() && _ac.validateDeviceActivation('jump', var1, var2, a)) {
                             _ac.authorizeJumpBoost();  // Authorize BEFORE setting
                             y = 300;
                             playSoundUp();  // Play pickup sound
@@ -5622,6 +5627,7 @@
                             if (ringSolidCollision(var1, var2, var3, var4, 13)) {
                                 var5 = false;
                             }
+                            if (!canInteract()) break;   // probing a candidate: solidity only
                             // Collect ring - set both halves
                             const water13 = getTile(var3, var4) & WATER_FLAG;
                             setTile(var3, var4, 145 | water13);
@@ -5651,6 +5657,7 @@
                         if (a === 16) {
                             var5 = false;
                         } else {
+                            if (!canInteract()) break;   // probing a candidate: solidity only
                             // Collect ring
                             const water14b = getTile(var3, var4) & WATER_FLAG;
                             setTile(var3, var4, 146 | water14b);
@@ -5705,6 +5712,7 @@
                             if (ringHSolidCollision(var1, var2, var3, var4, 15)) {
                                 var5 = false;
                             }
+                            if (!canInteract()) break;   // probing a candidate: solidity only
                             // Collect ring - set both halves
                             const water15 = getTile(var3, var4) & WATER_FLAG;
                             setTile(var3, var4, 147 | water15);
@@ -5738,6 +5746,7 @@
                             if (ringHSolidCollision(var1, var2, var3, var4, 16)) {
                                 var5 = false;
                             }
+                            if (!canInteract()) break;   // probing a candidate: solidity only
                             // Collect ring
                             const water16b = getTile(var3, var4) & WATER_FLAG;
                             setTile(var3, var4, 148 | water16b);
@@ -5792,6 +5801,7 @@
                         if (ringSolidCollision(var1, var2, var3, var4, 21)) {
                             var5 = false;
                         }
+                        if (!canInteract()) break;   // probing a candidate: solidity only
                         // Collect ring - set both halves
                         const water21 = getTile(var3, var4) & WATER_FLAG;
                         setTile(var3, var4, 153 | water21);
@@ -5818,6 +5828,7 @@
                 case 22:
                     if (ringPassableCollision(var1, var2, var3, var4)) {
                         // Bottom half has no solid part - ball passes through freely
+                        if (!canInteract()) break;   // probing a candidate: solidity only
                         // Collect ring
                         const water22b = getTile(var3, var4) & WATER_FLAG;
                         setTile(var3, var4, 154 | water22b);
@@ -5861,6 +5872,7 @@
                         if (ringHSolidCollision(var1, var2, var3, var4, 23)) {
                             var5 = false;
                         }
+                        if (!canInteract()) break;   // probing a candidate: solidity only
                         // Collect ring - set both halves
                         const water23 = getTile(var3, var4) & WATER_FLAG;
                         setTile(var3, var4, 155 | water23);
@@ -5890,6 +5902,7 @@
                         if (ringHSolidCollision(var1, var2, var3, var4, 24)) {
                             var5 = false;
                         }
+                        if (!canInteract()) break;   // probing a candidate: solidity only
                         // Collect ring
                         const water24b = getTile(var3, var4) & WATER_FLAG;
                         setTile(var3, var4, 156 | water24b);
@@ -5936,6 +5949,27 @@
 
             return var5;
         }
+
+        // ===== PROBE MODE =====
+        // canMove() is not a pure predicate: checkTile() kills the ball, collects rings and
+        // fires devices as a side effect. The physics uses canMove() to TEST candidate
+        // positions ("could I step here?"), so those tests were triggering interactions at
+        // pixels the ball never actually occupies. And because the fallbacks always probe
+        // s+1 BEFORE s-1, it showed up on an object's right side but not its left — which
+        // is exactly the reported asymmetry. It only bites when the ball is near-stationary
+        // vertically, because that is when these single-pixel fallback probes run instead of
+        // real motion carrying the ball through.
+        //
+        // While probing we still compute solidity and the u/v collision flags (the physics
+        // depends on them) — only the player-affecting interactions are suppressed.
+        let _probing = 0;
+        function canInteract() { return _probing === 0; }
+        function probeMove(var1, var2) {
+            _probing++;
+            try { return canMove(var1, var2); } finally { _probing--; }
+        }
+        // Apply interactions at the position the ball ACTUALLY occupies now.
+        function applyInteractionsHere() { canMove(s, r); }
 
         // Main collision check
         function canMove(var1, var2) {
@@ -6166,8 +6200,9 @@
                     var10 = o < 0 ? -1 : 1;
                 }
 
-                if (canMove(s, r + var10)) {
+                if (probeMove(s, r + var10)) {
                     r += var10;
+                    applyInteractionsHere();   // now at the pixel the ball really occupies
                     m = false;
                     // When big ball in water exits water, reduce upward velocity
                     if (var16 === -30) {
@@ -6187,13 +6222,19 @@
                 } else {
                     if (u && l < 10 && Cf === 0) {
                         const var11 = 1;
-                        if (canMove(s + var11, r + var10)) {
+                        // These two fallbacks are why the bug looked one-sided: s+1 is
+                        // always probed BEFORE s-1, so a candidate a pixel to the right
+                        // was evaluated (and used to fire) even when the ball never went
+                        // there. Probe silently; interact only where it actually lands.
+                        if (probeMove(s + var11, r + var10)) {
                             s += var11;
                             r += var10;
+                            applyInteractionsHere();
                             u = false;
-                        } else if (canMove(s - var11, r + var10)) {
+                        } else if (probeMove(s - var11, r + var10)) {
                             s -= var11;
                             r += var10;
+                            applyInteractionsHere();
                             u = false;
                         }
                     }
@@ -6339,19 +6380,22 @@
                     var13 = l < 0 ? -1 : 1;
                 }
 
-                if (canMove(s + var13, r)) {
+                if (probeMove(s + var13, r)) {
                     s += var13;
+                    applyInteractionsHere();   // now at the pixel the ball really occupies
                 } else if (u) {
                     u = false;
                     // var19 determines which direction to try rolling off edges - from original lines 942-946
                     const var19 = var5 ? -1 : 1;  // Reversed: try up first, Normal: try down first
 
-                    if (canMove(s + var13, r + var19)) {
+                    if (probeMove(s + var13, r + var19)) {
                         s += var13;
                         r += var19;
-                    } else if (canMove(s + var13, r - var19)) {
+                        applyInteractionsHere();
+                    } else if (probeMove(s + var13, r - var19)) {
                         s += var13;
                         r -= var19;
+                        applyInteractionsHere();
                     } else {
                         _ac.authorizeVelocityChange();  // Authorize horizontal collision bounce
                         l = -(l >> 1);
