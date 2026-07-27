@@ -4767,16 +4767,21 @@
             console.log('[AC] Game reset');
         }
 
-        // Complete level reset - reload the entire page to start fresh
+        // Complete level reset. NO page reload: the engine runs inside the menu page's
+        // game sector, and reloading the iframe drops the player back to a splash while
+        // it re-boots and re-negotiates the start handshake with the parent.
         function fullLevelReset() {
-            location.reload();
+            resetLevelInPlace();
         }
 
-        // Speedrun fast reset - reload level from file data without page reload
-        // Resets map, gameplay, timer, and shows splash if textures need time
+        // Speedrun fast reset (R key) — the same in-place reset, gated on speedrun mode.
         function speedrunFastReset() {
             if (!_sr.isEnabled()) return;
+            resetLevelInPlace();
+        }
 
+        // Rebuild the current level and reset all gameplay state, without reloading.
+        function resetLevelInPlace() {
             // Rebuild the level in place. Classic levels come from levels.js; online
             // levels are rebuilt from the copy cached at first load (they carry
             // _currentLevelNum === 0, which used to make this bail out entirely — so R
@@ -4854,7 +4859,7 @@
             // Reset and restart speedrun timer (both happen atomically)
             _sr.reset(_currentLevelNum);
 
-            console.log('[SR] Fast reset complete');
+            console.log('[Reset] Level reset in place');
         }
 
         // Respawn ball
@@ -5267,10 +5272,17 @@
                 y1 += 12;
             }
 
+            // aabbOverlap is INCLUSIVE (<=), and the cap boxes above are built inclusive
+            // (e.g. the top cap is x1..x2 = +5..+6, two pixels). The ball must therefore
+            // be inclusive too: its last pixel is p-1 from centre, NOT p. Using +p made
+            // the ball reach one pixel past its own edge on the right and bottom, so an
+            // object it was merely adjacent to still registered a hit — most noticeable
+            // resting with no vertical motion, where that extra pixel is held against
+            // the same neighbour every frame. Matches ringPassableCollision's convention.
             const bx1 = ballX - p;
             const by1 = ballY - p;
-            const bx2 = ballX + p;
-            const by2 = ballY + p;
+            const bx2 = ballX + p - 1;
+            const by2 = ballY + p - 1;
 
             return aabbOverlap(bx1, by1, bx2, by2, x1, y1, x2, y2);
         }
@@ -5313,10 +5325,12 @@
                 x2 -= 1;
             }
 
+            // Inclusive box, same as ringSolidCollision above — the ball's last pixel is
+            // p-1 from centre. Using +p over-reached by a pixel on the right/bottom.
             const bx1 = ballX - p;
             const by1 = ballY - p;
-            const bx2 = ballX + p;
-            const by2 = ballY + p;
+            const bx2 = ballX + p - 1;
+            const by2 = ballY + p - 1;
 
             return aabbOverlap(bx1, by1, bx2, by2, x1, y1, x2, y2);
         }
@@ -7242,11 +7256,15 @@
 
         function restartLevel() {
             if (_statsLocked) {
-                persistGameOver();  // Game over — ensure 0/0 survives the reload
+                persistGameOver();  // Game over — ensure 0/0 survives the restart
             } else {
                 saveSnapshot();     // Revert stats to pre-level values
             }
-            location.reload();
+            // Rebuild in place rather than reloading. resetLevelInPlace() restores
+            // lives/score from the snapshot itself, so this matches what a reload used
+            // to produce — without dropping the sector back to a splash mid-session.
+            resetLevelInPlace();
+            resumeGame();           // close the pause overlay we were opened from
         }
 
         function exitToMenu() {
@@ -7805,10 +7823,10 @@
             prewarmTileCache();
 
             // ---- everything above is LOADING and runs during the parent's transition ----
-            // Announce that loading is finished. The parent uses this to time the reveal,
-            // and — crucially — to re-open the gate after an in-page reload (restartLevel /
-            // fullLevelReset call location.reload(), which builds a FRESH gate that would
-            // otherwise wait forever for a bounceStart the parent already sent once).
+            // Announce that loading is finished, so the parent can time its reveal. Also
+            // re-opens the gate if this document ever reloads (nothing in the embedded
+            // path reloads any more — restart/reset rebuild in place — but a fresh gate
+            // would otherwise wait forever for a bounceStart the parent already sent).
             if (_sectorEmbedded) { _postToParent({ type: 'bouncePreloaded' }); }
 
             // Wait for the screen to be covered before the game actually starts, so no

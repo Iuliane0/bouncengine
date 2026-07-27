@@ -5411,17 +5411,22 @@
                     // sitting there when the sector fades away, or it visibly pops in, fades
                     // out and fades back in. We fire the activator as the screen unblurs so
                     // the UI blurs in on the tail of the transition, with its own 0.3s curve.
-                    // Fire the activator as soon as the rebuild is ready. We are at peak blur
-                    // here, so the UI blurs in *under* the blur and is already well along by
-                    // the time the screen clears — rather than starting from nothing exactly
-                    // when the blur lifts, which reads as the UI lagging the transition.
+                    // Start clearing FIRST. Anything done before this (a menu rebuild, tearing
+                    // down a 350KB iframe) delays the blur from starting to lift and reads as
+                    // a hold at peak.
+                    blurOut(() => { if (myGen === gen) phase = 'idle'; });
+                    // Rebuild + reveal the menu underneath while the blur lifts. We are at peak
+                    // here, so the UI blurs in under the blur and is well along by the time the
+                    // screen is clear.
                     try {
                         Promise.resolve(isOnline ? showOnline(true) : showOffline(true))
                             .then(fn => { if (myGen === gen && typeof fn === 'function') fn(); })
                             .catch(() => { });
                     } catch (e) { }
-                    teardownFrame();
-                    blurOut(() => { if (myGen === gen) phase = 'idle'; });
+                    // Drop the iframe only after the blur is under way — it is already fully
+                    // transparent, so removing it late is invisible but removing it early
+                    // stalls the ramp.
+                    setTimeout(() => { if (myGen === gen) teardownFrame(); }, 0);
                     pollVersion();                                   // menu is long-lived now → re-check for updates
                 }
                 // Hand ownership back to the menu and start fading the sector out. Cheap work
@@ -5498,10 +5503,12 @@
                     releaseSectorOwnership();                        // hand back to the menu + start the fade-out
                     if (wasEntering && covered) { doSwap(myGen); return; }  // blur already up
                     if (wasEntering) { blurIn(() => onCoveredEnter(myGen)); return; }
-                    // Was playing: blur up over the game while the sector fades out beneath.
-                    // Dwell at peak for the SAME beat the entry uses before it starts
-                    // clearing — without it the way out is visibly shorter than the way in.
-                    blurIn(() => setTimeout(() => doSwap(myGen), MIN_HOLD_MS));
+                    // Was playing: blur up over the game while the sector fades out beneath,
+                    // then start clearing the instant it peaks. No dwell here — on the way IN
+                    // the cross-fade is still running past the peak so the motion stays
+                    // continuous, but on the way out the fade has already finished, so any
+                    // hold at peak is dead time the eye reads as a stall.
+                    blurIn(() => doSwap(myGen));
                 }
                 // The menu is long-lived now (it never unloads on level launch), so re-run
                 // the SAME guarded check used at boot — never a bespoke copy, or this path
