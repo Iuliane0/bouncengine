@@ -5169,8 +5169,11 @@
                         });
                     }
 
-                    // Register SW
-                    navigator.serviceWorker.register('/sw.js').then(reg => {
+                    // Register SW. updateViaCache:'none' makes the browser bypass its HTTP
+                    // cache for sw.js AND its importScripts — without it the worker can
+                    // import a stale /version.js and end up naming its cache after an old
+                    // release (observed: cache "bouncengine-v1.2.1" while the app ran v1.2.3).
+                    navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).then(reg => {
                         console.log('[PWA] SW registered');
 
                         // If a worker is waiting, activate it now (we're on the menu)

@@ -151,9 +151,18 @@ self.addEventListener('fetch', (event) => {
   // Never intercept sw.js - let version checks always hit the network
   if (event.request.url.includes('sw.js')) return;
 
-  // Network-first for frequently updated files — changes appear immediately
-  // { cache: 'no-cache' } bypasses the browser HTTP cache.
-  if (event.request.url.includes('/version.js') || event.request.url.includes('/engine/levels.js') || event.request.url.includes('/editor/') || event.request.url.includes('/api/')) {
+  // Network-first for frequently updated files — changes appear immediately.
+  // { cache: 'no-cache' } bypasses the browser HTTP cache; the .catch below still
+  // serves the cached copy when offline, so this stays offline-capable.
+  //
+  // '/engine/' (not just /engine/levels.js) is deliberate. The menu loads the game
+  // as an iframe at '/engine/?level=N', which is NOT in PRECACHE_URLS, so it used to
+  // fall through to the cache-first branch and be fetched with a plain fetch(). The
+  // server sends no cache headers (its .htaccess is not honoured), so the browser
+  // served that navigation from its own HTTP cache and the engine stayed on an old
+  // build while the menu — precached with no-cache — updated. '/editor/' was already
+  // listed here, which is exactly why the editor never went stale.
+  if (event.request.url.includes('/version.js') || event.request.url.includes('/engine/') || event.request.url.includes('/editor/') || event.request.url.includes('/api/')) {
     event.respondWith(
       fetch(event.request, { cache: 'no-cache' })
         .then((response) => {
