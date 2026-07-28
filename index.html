@@ -5169,11 +5169,20 @@
                         });
                     }
 
-                    // Register SW. updateViaCache:'none' makes the browser bypass its HTTP
-                    // cache for sw.js AND its importScripts — without it the worker can
-                    // import a stale /version.js and end up naming its cache after an old
-                    // release (observed: cache "bouncengine-v1.2.1" while the app ran v1.2.3).
-                    navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).then(reg => {
+                    // Register the worker at a VERSIONED url.
+                    //
+                    // updateViaCache:'none' only bypasses the *browser's* HTTP cache. It has
+                    // no effect on Cloudflare, which edge-caches every .js on this origin —
+                    // /sw.js itself measured cf-cache-status:HIT with age ~37min. A bare
+                    // '/sw.js' can therefore keep returning the previous release's bytes,
+                    // leaving players on an old worker (the one that cached '/engine/?level=N'
+                    // per level) long after the version number on screen had moved on.
+                    //
+                    // '?v=<version>' is a URL the edge has never seen, so it MISSes through to
+                    // the origin. The worker reads its own version back out of location.search
+                    // instead of importing /version.js, which had the same CDN problem.
+                    const swUrl = APP_VERSION ? ('/sw.js?v=' + encodeURIComponent(APP_VERSION)) : '/sw.js';
+                    navigator.serviceWorker.register(swUrl, { updateViaCache: 'none' }).then(reg => {
                         console.log('[PWA] SW registered');
 
                         // If a worker is waiting, activate it now (we're on the menu)
